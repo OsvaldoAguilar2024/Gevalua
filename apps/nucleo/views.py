@@ -24,7 +24,9 @@ def panel(request):
     """Vista completa para talento humano, jefes y consultores."""
     if not request.user.puede_ver_vista_completa:
         raise PermissionDenied
-    return render(request, "nucleo/panel.html")
+    from .tablero import datos_panel
+
+    return render(request, "nucleo/panel.html", datos_panel(request.user))
 
 
 @cache_control(max_age=3600)

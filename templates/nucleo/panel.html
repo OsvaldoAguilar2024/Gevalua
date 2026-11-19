@@ -1,18 +1,121 @@
 {% extends "base.html" %}
+{% load iconos %}
 {% block clase_body %}completa{% endblock %}
 {% block contenido %}
-<h1>Panel</h1>
-<div class="rejilla">
-  {% if user.es_admin_empresa %}
-  <a class="tarjeta enlace-tarjeta" href="{% url 'estructura' %}"><h2>Empresa y estructura</h2><p>Áreas, cargos, organigrama y personas.</p></a>
-  <a class="tarjeta enlace-tarjeta" href="{% url 'ingresos' %}"><h2>Ingreso y contratación</h2><p>Expediente digital, lista de chequeo por etapa, antecedentes y alertas.</p></a>
-  <a class="tarjeta enlace-tarjeta" href="{% url 'periodos' %}"><h2>Periodos y plantillas</h2><p>Plantillas de evaluación por periodicidad y concertaciones de cada periodo.</p></a>
-  {% endif %}
-  {% if user.es_jefe or user.es_admin_empresa %}
-  <a class="tarjeta enlace-tarjeta" href="{% url 'equipo' %}"><h2>Mi equipo</h2><p>Metas, evidencias por revisar y evaluaciones de tu equipo directo y en cascada.</p></a>
-  {% endif %}
-  <a class="tarjeta enlace-tarjeta" href="{% url 'resultados' %}"><h2>Resultados</h2><p>Por persona, equipo y área, con la cascada de jefes.</p></a>
-  <a class="tarjeta enlace-tarjeta" href="{% url 'repositorio' %}"><h2>Repositorio</h2><p>Soportes y evaluaciones por empleado, área, periodo y tipo.</p></a>
-  {% if user.es_jefe or user.es_admin_empresa %}<a class="tarjeta enlace-tarjeta" href="{% url 'recordatorios' %}"><h2>Recordatorios</h2><p>Programa avisos para tu equipo o una persona, una vez o repetidos.</p></a>{% endif %}
+<div class="saludo">
+  <div>
+    <h1>{% if ve_todo %}Panel de la empresa{% else %}Panel de mi equipo{% endif %}</h1>
+    <p>{% if periodo %}Periodo: {{ periodo.nombre }}{% else %}Aún no hay periodos de evaluación.{% endif %}</p>
+  </div>
+  {% if user.es_admin_empresa %}<a class="boton chico" href="{% url 'periodos' %}">{% icono "periodos" %} Periodos</a>{% endif %}
 </div>
+
+<section class="indicadores">
+  <a class="indicador" href="{% if user.es_admin_empresa %}{% url 'empleados' %}{% else %}{% url 'equipo' %}{% endif %}">
+    <span class="indicador-icono ic-azul">{% icono "equipo" %}</span>
+    <small>{% if ve_todo %}Personas activas{% else %}Personas en mi equipo{% endif %}</small>
+    <div class="indicador-fila"><strong>{{ personas }}</strong>{% if ingresos %}<span class="etiqueta teal">{{ ingresos }} en ingreso</span>{% endif %}</div>
+  </a>
+  <a class="indicador" href="{% if periodo %}{% url 'periodo' periodo.pk %}{% else %}#{% endif %}">
+    <span class="indicador-icono ic-teal">{% icono "meta" %}</span>
+    <small>Metas concertadas</small>
+    <div class="indicador-fila"><strong>{{ concertadas }}<span class="tenue"> / {{ total }}</span></strong><span class="etiqueta {% if pct_concertadas >= 80 %}verde{% elif pct_concertadas >= 50 %}ambar{% else %}rojo{% endif %}">{{ pct_concertadas }} %</span></div>
+  </a>
+  <a class="indicador" href="{% url 'equipo' %}">
+    <span class="indicador-icono ic-ambar">{% icono "archivo" %}</span>
+    <small>Evidencias por revisar</small>
+    <div class="indicador-fila"><strong>{{ por_revisar }}</strong>{% if por_revisar %}<span class="etiqueta ambar">Pendiente</span>{% else %}<span class="etiqueta verde">Al día</span>{% endif %}</div>
+  </a>
+  <a class="indicador" href="{% url 'resultados' %}">
+    <span class="indicador-icono ic-verde">{% icono "estrella" %}</span>
+    <small>Promedio de evaluación</small>
+    <div class="indicador-fila"><strong>{% if promedio %}{{ promedio }}<span class="tenue"> / 5</span>{% else %}–{% endif %}</strong>{% if nivel_promedio %}<span class="etiqueta azul">{{ nivel_promedio }}</span>{% endif %}</div>
+  </a>
+</section>
+
+<div class="columnas">
+  <section class="tarjeta">
+    <div class="tarjeta-titulo"><h2>Resultado por área</h2><a class="tenue" href="{% url 'resultados' %}">Ver detalle</a></div>
+    {% if areas %}
+    <div class="barras">
+      {% for a in areas %}
+      <div class="barra-fila"><span>{{ a.nombre }}</span><div class="pista"><i style="width: {{ a.pct }}%"></i></div><span>{{ a.nota }}</span></div>
+      {% endfor %}
+    </div>
+    {% else %}<p class="tenue">Cuando se cierren evaluaciones verás aquí el promedio de cada área.</p>{% endif %}
+    <h2 style="margin-top: 28px">Distribución por nivel</h2>
+    <div class="barras">
+      {% for n in niveles %}
+      <div class="barra-fila"><span>{{ n.nombre }}</span><div class="pista"><i class="{{ n.color }}" style="width: {{ n.pct }}%"></i></div><span>{{ n.n }}</span></div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="tarjeta">
+    <div class="tarjeta-titulo"><h2>Avance del periodo</h2></div>
+    <div class="medidor" style="--pct: {{ pct_evaluadas }}"><div><strong>{{ pct_evaluadas }}%</strong><small>evaluado</small></div></div>
+    <div class="avance-doble">
+      <div><strong>{{ evaluadas }}</strong><small>Evaluaciones cerradas</small></div>
+      <div><strong>{{ total }}</strong><small>Concertaciones</small></div>
+    </div>
+  </section>
+</div>
+
+<div class="columnas">
+  <section class="tarjeta" style="padding: 0; overflow: hidden">
+    <div class="tarjeta-titulo" style="padding: 20px 24px 0"><h2>Últimas evaluaciones</h2><a class="tenue" href="{% url 'repositorio' %}">Ver todas</a></div>
+    {% if recientes %}
+    <div style="overflow-x: auto">
+    <table class="tabla">
+      <thead><tr><th>Persona</th><th class="ocultar-movil">Periodo</th><th>Nota</th><th>Nivel</th></tr></thead>
+      <tbody>
+      {% for r in recientes %}
+        {% with u=r.concertacion.empleado.usuario %}
+        <tr>
+          <td><a class="persona" href="{% url 'evaluacion' r.concertacion.pk %}" style="text-decoration: none; color: inherit">
+            <span class="avatar chico t{{ u.get_full_name|tono }}">{{ u.get_full_name|default:u.email|iniciales }}</span>
+            <div><strong>{{ u.get_full_name|default:u.email }}</strong><small>{{ r.concertacion.empleado.cargo|default:"" }}</small></div></a></td>
+          <td class="tenue ocultar-movil">{{ r.concertacion.periodo.nombre }}</td>
+          <td><strong>{{ r.nota_final }}</strong></td>
+          <td><span class="etiqueta {{ r.color }}">{{ r.nivel }}</span></td>
+        </tr>
+        {% endwith %}
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}<p class="tenue" style="padding: 0 24px 20px">Todavía no hay evaluaciones cerradas.</p>{% endif %}
+  </section>
+
+  <section class="tarjeta">
+    <div class="tarjeta-titulo"><h2>{% if ve_todo %}Alertas de contratos{% else %}Accesos rápidos{% endif %}</h2>{% if user.es_admin_empresa %}<a class="tenue" href="{% url 'alertas' %}">Ver todas</a>{% endif %}</div>
+    {% if ve_todo %}
+      {% if alertas %}
+      <ul class="alertas">
+        {% for a in alertas %}
+        <li><span class="indicador-icono {% if 'prueba' in a.que %}ic-ambar{% else %}ic-azul{% endif %}">{% icono "alerta" %}</span>
+          <div><strong>{{ a.quien }}</strong><small>{{ a.que }} el {{ a.fecha|date:"j \d\e F" }}</small></div></li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="tenue">No hay periodos de prueba ni contratos que terminen en los próximos 30 días.</p>{% endif %}
+    {% else %}
+      <div class="accesos" style="grid-template-columns: 1fr">
+        <a class="acceso" href="{% url 'equipo' %}"><span class="indicador-icono ic-azul">{% icono "equipo" %}</span><div>Mi equipo<small>Metas y evidencias</small></div></a>
+        <a class="acceso" href="{% url 'recordatorios' %}"><span class="indicador-icono ic-teal">{% icono "recordatorios" %}</span><div>Recordatorios<small>Avisos para tu equipo</small></div></a>
+      </div>
+    {% endif %}
+  </section>
+</div>
+
+{% if user.es_admin_empresa %}
+<section class="tarjeta">
+  <div class="tarjeta-titulo"><h2>Administración</h2></div>
+  <div class="accesos">
+    <a class="acceso" href="{% url 'estructura' %}"><span class="indicador-icono ic-azul">{% icono "estructura" %}</span><div>Empresa y estructura<small>Áreas, cargos y organigrama</small></div></a>
+    <a class="acceso" href="{% url 'ingresos' %}"><span class="indicador-icono ic-teal">{% icono "ingreso" %}</span><div>Ingreso y contratación<small>Expediente y antecedentes</small></div></a>
+    <a class="acceso" href="{% url 'periodos' %}"><span class="indicador-icono ic-ambar">{% icono "periodos" %}</span><div>Periodos y plantillas<small>Concertaciones del periodo</small></div></a>
+    <a class="acceso" href="{% url 'recordatorios' %}"><span class="indicador-icono ic-verde">{% icono "recordatorios" %}</span><div>Recordatorios<small>Avisos programados</small></div></a>
+  </div>
+</section>
+{% endif %}
 {% endblock %}
