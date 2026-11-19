@@ -23,11 +23,11 @@
   </form>
 {% else %}
   {% for m in metas %}
-  <section class="tarjeta meta">
+  <section class="tarjeta meta" id="meta-{{ m.pk }}">
     <div class="encabezado"><strong>{{ m.descripcion }}</strong><span class="peso">{{ m.peso }} %</span></div>
     <p class="tenue">{{ m.get_tipo_display }}{% if m.es_bono %} · bono{% endif %}{% if m.indicador %} · {{ m.indicador }}{% endif %}{% if m.valor_objetivo %} · objetivo: {{ m.valor_objetivo }}{% endif %}</p>
     {% if m.evidencia_requerida %}<p class="ayuda">Evidencia: {{ m.evidencia_requerida }}</p>{% endif %}
-    {% block meta_extra %}{% endblock %}
+    {% include "desempeno/_meta_evidencias.html" %}
   </section>
   {% endfor %}
 {% endif %}

@@ -1,0 +1,36 @@
+{% if c.estado == "aceptada" or c.estado == "cerrada" %}
+<div class="evidencias">
+  {% for ev in m.evidencias.all %}
+    <div id="ev-{{ ev.pk }}" class="evidencia ev-{{ ev.estado }}">
+      <div><strong>{{ ev.get_estado_display }}</strong> <span class="tenue">· {{ ev.fecha|date:"d/m/Y H:i" }}{% if not ev.a_tiempo %} · tarde{% endif %}</span></div>
+      {% if ev.archivo %}<a href="{% url 'descargar_evidencia' ev.pk %}" target="_blank" rel="noopener">{{ ev.nombre_archivo|default:"Ver archivo" }}</a>{% endif %}
+      {% if ev.enlace %}<a href="{{ ev.enlace }}" target="_blank" rel="noopener noreferrer">{{ ev.enlace|truncatechars:50 }}</a>{% endif %}
+      {% if ev.comentario %}<p>{{ ev.comentario }}</p>{% endif %}
+      {% if ev.comentario_jefe %}<p class="comentario-jefe">Jefe: {{ ev.comentario_jefe }}</p>{% endif %}
+      {% if rol == "jefe" and ev.estado == "pendiente" and c.estado == "aceptada" %}
+        <form method="post" action="{% url 'revisar_evidencia' ev.pk 'aprobar' %}" class="acciones">{% csrf_token %}
+          <input type="text" name="comentario_jefe" placeholder="Comentario (obligatorio para devolver)">
+          <button class="boton chico">Aprobar</button>
+          <button class="boton chico secundario" formaction="{% url 'revisar_evidencia' ev.pk 'devolver' %}">Devolver</button>
+        </form>
+      {% endif %}
+    </div>
+  {% empty %}
+    <p class="tenue">Sin evidencias todavía.</p>
+  {% endfor %}
+  {% if rol == "empleado" and c.estado == "aceptada" %}
+  <details {% if not m.evidencias.all %}open{% endif %}>
+    <summary>Subir evidencia</summary>
+    <form method="post" enctype="multipart/form-data" action="{% url 'subir_evidencia' m.pk %}" class="carga">{% csrf_token %}
+      <label class="boton secundario grande subir-foto">Tomar foto o elegir archivo
+        <input type="file" name="archivo" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" hidden onchange="this.parentElement.querySelector('span').textContent = this.files[0] ? this.files[0].name : ''">
+        <span class="nombre-archivo"></span>
+      </label>
+      <label>O pega un enlace</label><input type="url" name="enlace" placeholder="https://">
+      <label>Comentario</label><textarea name="comentario" rows="2"></textarea>
+      <button class="boton grande">Enviar</button>
+    </form>
+  </details>
+  {% endif %}
+</div>
+{% endif %}

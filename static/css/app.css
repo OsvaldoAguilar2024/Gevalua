@@ -145,3 +145,15 @@ label.casilla input { width: 20px; height: 20px; }
 @media (min-width: 600px) { .fila-2 { grid-template-columns: 2fr 1fr; } }
 .meta .peso { font-weight: 700; color: var(--azul); }
 .firmas code { font-size: 0.85rem; }
+
+/* Evidencias */
+.evidencias { margin-top: 12px; border-top: 1px dashed var(--borde); padding-top: 8px; }
+.evidencia { padding: 8px 0 8px 10px; border-left: 3px solid var(--borde); margin: 6px 0; }
+.ev-pendiente { border-left-color: #c48a00; }
+.ev-aprobada { border-left-color: var(--verde); }
+.ev-devuelta { border-left-color: var(--rojo); }
+.evidencia p { margin: 4px 0; }
+.comentario-jefe { color: var(--tenue); font-style: italic; }
+.subir-foto { position: relative; }
+.nombre-archivo { display: block; font-size: 0.85rem; font-weight: 400; }
+.acciones input[type=text] { flex: 1 1 200px; width: auto; padding: 8px; }

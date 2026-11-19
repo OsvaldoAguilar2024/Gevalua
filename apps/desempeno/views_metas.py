@@ -127,7 +127,7 @@ def concertacion(request, pk):
     if rol != "empleado":
         registrar(request, "consultar", c)
     return render(request, "desempeno/concertacion.html", {
-        "c": c, "rol": rol, "formset": formset, "metas": c.metas.all(),
+        "c": c, "rol": rol, "formset": formset, "metas": c.metas.prefetch_related("evidencias"),
         "firmas": firmas_de(Firma.Documento.CONCERTACION, c.pk),
         "puede_firmar": (rol == "jefe" and c.estado == Concertacion.Estado.BORRADOR and c.suma_pesos == 100)
         or (rol == "empleado" and c.estado == Concertacion.Estado.POR_ACEPTAR),

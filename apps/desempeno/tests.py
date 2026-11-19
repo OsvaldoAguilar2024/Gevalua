@@ -118,3 +118,66 @@ class ConcertacionTests(TenantTestCase):
                           f"metas-{i}-evidencia_requerida": ""})
         r = self.c.post(reverse("concertacion", args=[conc.pk]), datos)
         self.assertContains(r, "deben sumar 100")
+
+
+import shutil
+import tempfile
+
+from django.core.files.uploadedfile import SimpleUploadedFile
+
+from .models import Evidencia
+
+MEDIA = tempfile.mkdtemp()
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class EvidenciasTests(ConcertacionTests):
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(MEDIA, ignore_errors=True)
+
+    def concertada(self):
+        conc = Concertacion.objects.get(empleado=self.emp)
+        self.firmar_como(self.jefe.usuario, conc)
+        self.firmar_como(self.emp.usuario, conc)
+        return conc
+
+    def test_subir_revisar_devolver(self):
+        conc = self.concertada()
+        meta = conc.metas.first()
+        self.c.force_login(self.emp.usuario)
+        self.c.post(reverse("subir_evidencia", args=[meta.pk]), {
+            "archivo": SimpleUploadedFile("foto.jpg", b"\xff\xd8\xff", content_type="image/jpeg"), "comentario": "Reporte",
+        })
+        ev = Evidencia.objects.get()
+        self.assertTrue(ev.archivo.name.startswith(f"empresa_{self.tenant.schema_name}/evidencias/"))
+        # el jefe ve el pendiente en su inicio
+        self.c.force_login(self.jefe.usuario)
+        self.assertContains(self.c.get(reverse("inicio")), "Revisar 1 evidencia")
+        # devolver exige comentario
+        self.c.post(reverse("revisar_evidencia", args=[ev.pk, "devolver"]), {"comentario_jefe": ""})
+        ev.refresh_from_db()
+        self.assertEqual(ev.estado, Evidencia.Estado.PENDIENTE)
+        self.c.post(reverse("revisar_evidencia", args=[ev.pk, "devolver"]), {"comentario_jefe": "Falta la firma del cliente"})
+        ev.refresh_from_db()
+        self.assertEqual(ev.estado, Evidencia.Estado.DEVUELTA)
+        self.c.force_login(self.emp.usuario)
+        self.assertContains(self.c.get(reverse("inicio")), "Corregir evidencia")
+
+    def test_empleado_no_aprueba_lo_suyo_y_ajeno_no_descarga(self):
+        conc = self.concertada()
+        meta = conc.metas.first()
+        self.c.force_login(self.emp.usuario)
+        self.c.post(reverse("subir_evidencia", args=[meta.pk]), {"archivo": SimpleUploadedFile("a.pdf", b"%PDF")})
+        ev = Evidencia.objects.get()
+        self.assertEqual(self.c.post(reverse("revisar_evidencia", args=[ev.pk, "aprobar"])).status_code, 404)
+        otro = persona("otro2@prueba.co")
+        self.c.force_login(otro.usuario)
+        self.assertEqual(self.c.get(reverse("descargar_evidencia", args=[ev.pk])).status_code, 404)
+
+    def test_no_sube_antes_de_concertar(self):
+        conc = Concertacion.objects.get(empleado=self.emp)
+        self.c.force_login(self.emp.usuario)
+        self.c.post(reverse("subir_evidencia", args=[conc.metas.first().pk]), {"enlace": "https://ejemplo.co/x"})
+        self.assertFalse(Evidencia.objects.exists())
