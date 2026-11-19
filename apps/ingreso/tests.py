@@ -175,7 +175,7 @@ class FirmaContratoTests(TenantTestCase):
         self.req.refresh_from_db()
         self.assertEqual(self.req.estado, RequisitoIngreso.Estado.VERIFICADO)
         self.assertEqual(self.req.verificado_por, self.admin)
-        self.assertContains(self.c.get(reverse("proceso", args=[self.p.pk])), "firmó el")
+        self.assertContains(self.c.get(reverse("proceso", args=[self.p.pk])), "Firmó", count=2)
 
     def test_codigo_incorrecto_no_firma(self):
         from apps.firmas.models import Firma
