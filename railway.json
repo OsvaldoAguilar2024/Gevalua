@@ -5,7 +5,7 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "preDeployCommand": ["python manage.py migrate_schemas --noinput && python manage.py asegurar_publico"],
+    "preDeployCommand": ["sh bin/predeploy.sh"],
     "healthcheckPath": "/salud/",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE",

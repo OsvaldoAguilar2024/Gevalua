@@ -54,3 +54,22 @@ class AccesoPorRolesTests(TenantTestCase):
 
     def test_salud(self):
         self.assertEqual(self.c.get("/salud/").content, b"ok")
+
+
+class DominioPublicoTests(TenantTestCase):
+    @classmethod
+    def setup_tenant(cls, tenant):
+        tenant.nombre = "Empresa de prueba"
+        tenant.nit = "900123456-8"
+
+    def test_dominio_publico_sin_registrar_abre_portada(self):
+        from django.db import connection
+        from django.test import Client
+
+        from apps.clientes.models import Empresa
+
+        connection.set_schema_to_public()
+        Empresa.objects.get_or_create(schema_name="public", defaults={"nombre": "op", "nit": "000000000-0"})
+        with self.settings(PUBLIC_DOMAINS=["web-prueba.up.railway.app"], ALLOWED_HOSTS=["*"]):
+            r = Client(HTTP_HOST="web-prueba.up.railway.app").get("/")
+        self.assertContains(r, "gevalua")

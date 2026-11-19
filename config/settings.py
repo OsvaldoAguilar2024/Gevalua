@@ -84,7 +84,7 @@ ROOT_URLCONF = "config.urls"
 
 MIDDLEWARE = [
     "apps.nucleo.middleware.SaludMiddleware",
-    "django_tenants.middleware.main.TenantMainMiddleware",
+    "apps.nucleo.middleware.EmpresaMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
