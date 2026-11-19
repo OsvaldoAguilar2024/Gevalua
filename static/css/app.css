@@ -137,3 +137,11 @@ label.casilla input { width: 20px; height: 20px; }
 .estado-descartado { color: var(--rojo); }
 .boton[disabled] { opacity: 0.5; cursor: not-allowed; }
 .contratar { margin-top: 16px; border-top: 1px solid var(--borde); padding-top: 8px; }
+
+/* Desempeño */
+.boton-lista { display: block; width: 100%; margin-top: 8px; text-align: left; }
+.col-chica { width: 80px; }
+.fila-2 { display: grid; grid-template-columns: 1fr; gap: 0 12px; }
+@media (min-width: 600px) { .fila-2 { grid-template-columns: 2fr 1fr; } }
+.meta .peso { font-weight: 700; color: var(--azul); }
+.firmas code { font-size: 0.85rem; }

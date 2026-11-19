@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block clase_body %}{% if rol == "empleado" %}simple{% else %}completa{% endif %}{% endblock %}
+{% block contenido %}
+<p><a href="{% if rol == 'empleado' %}{% url 'inicio' %}{% elif rol == 'admin' %}{% url 'periodo' c.periodo_id %}{% else %}{% url 'equipo' %}{% endif %}">← Volver</a></p>
+<div class="encabezado"><h1>Metas · {{ c.periodo }}</h1><span class="estado">{{ c.get_estado_display }}</span></div>
+<p class="tenue">{{ c.empleado }}{% if c.empleado.cargo %} · {{ c.empleado.cargo.nombre }}{% endif %} · jefe: {{ c.jefe }}</p>
+
+{% if formset %}
+  <form method="post">{% csrf_token %}
+    <p class="ayuda">Ajusta las metas con indicadores medibles, alineadas con el contrato, el reglamento interno y la jornada legal. Los pesos suman 100 %.</p>
+    {% for e in formset.non_form_errors %}<p class="error">{{ e }}</p>{% endfor %}
+    {{ formset.management_form }}
+    {% for f in formset %}
+      <section class="tarjeta meta-edicion">{% for h in f.hidden_fields %}{{ h }}{% endfor %}
+        <div class="fila-2"><div><label>Tipo</label>{{ f.tipo }}</div><div><label>Peso %</label>{{ f.peso }}{{ f.peso.errors }}</div></div>
+        <label>Meta o actividad</label>{{ f.descripcion }}{{ f.descripcion.errors }}
+        <div class="fila-2"><div><label>Indicador</label>{{ f.indicador }}</div><div><label>Objetivo</label>{{ f.valor_objetivo }}</div></div>
+        <label>Evidencia esperada</label>{{ f.evidencia_requerida }}
+        {% if f.instance.pk %}<label class="casilla">{{ f.DELETE }} Quitar esta meta</label>{% endif %}
+      </section>
+    {% endfor %}
+    <button class="boton" name="accion" value="guardar">Guardar metas</button>
+  </form>
+{% else %}
+  {% for m in metas %}
+  <section class="tarjeta meta">
+    <div class="encabezado"><strong>{{ m.descripcion }}</strong><span class="peso">{{ m.peso }} %</span></div>
+    <p class="tenue">{{ m.get_tipo_display }}{% if m.es_bono %} · bono{% endif %}{% if m.indicador %} · {{ m.indicador }}{% endif %}{% if m.valor_objetivo %} · objetivo: {{ m.valor_objetivo }}{% endif %}</p>
+    {% if m.evidencia_requerida %}<p class="ayuda">Evidencia: {{ m.evidencia_requerida }}</p>{% endif %}
+    {% block meta_extra %}{% endblock %}
+  </section>
+  {% endfor %}
+{% endif %}
+
+{% if puede_firmar %}
+  <a class="boton grande" href="{% url 'firmar' 'concertacion' c.pk %}">{% if rol == "jefe" %}Firmar y enviar a {{ c.empleado.usuario.get_short_name }}{% else %}Aceptar y firmar mis metas{% endif %}</a>
+{% elif rol == "jefe" and c.estado == "borrador" %}
+  <p class="ayuda">Para enviar, los pesos deben sumar 100 % (ahora {{ c.suma_pesos }} %).</p>
+{% endif %}
+{% if rol == "jefe" and c.estado == "por_aceptar" %}
+  <form method="post">{% csrf_token %}<button class="enlace" name="accion" value="devolver">Corregir metas antes de que {{ c.empleado.usuario.get_short_name }} firme</button></form>
+{% endif %}
+
+{% if firmas %}
+<section class="tarjeta firmas"><h2>Firmas</h2>
+  <ul class="lista">{% for f in firmas %}<li>{{ f.firmante_nombre }} ({{ f.calidad }}) · {{ f.fecha|date:"d/m/Y H:i" }} · código por correo · huella <code>{{ f.huella_documento|slice:":12" }}…</code></li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endblock %}

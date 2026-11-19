@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<p><a href="{% url 'periodos' %}">← Periodos</a></p>
+<div class="encabezado"><h1>{{ periodo.nombre }}</h1><span class="estado">{{ periodo.get_estado_display }}</span></div>
+<p class="tenue">{{ periodo.plantilla }} · del {{ periodo.fecha_inicio|date:"d/m/Y" }} al {{ periodo.fecha_fin|date:"d/m/Y" }} · evaluación hasta el {{ periodo.fecha_limite|date:"d/m/Y" }}</p>
+{% if periodo.estado == "abierto" %}
+<form method="post" class="acciones">{% csrf_token %}
+  <button class="boton chico" name="accion" value="generar">Generar concertaciones para quienes tienen jefe</button>
+  <button class="boton chico secundario" name="accion" value="cerrar">Cerrar periodo</button>
+</form>
+{% endif %}
+{% if sin_jefe %}<p class="ayuda">Sin jefe asignado (no se les genera concertación): {% for e in sin_jefe %}{{ e }}{% if not forloop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
+<div class="tabla-envoltura"><table class="tabla">
+  <thead><tr><th>Persona</th><th>Jefe</th><th>Estado</th></tr></thead>
+  <tbody>{% for c in concertaciones %}<tr><td><a href="{% url 'concertacion' c.pk %}">{{ c.empleado }}</a><br><span class="tenue">{{ c.empleado.cargo.nombre }}</span></td><td>{{ c.jefe }}</td><td>{{ c.get_estado_display }}</td></tr>{% empty %}<tr><td colspan="3" class="tenue">Aún no hay concertaciones.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}

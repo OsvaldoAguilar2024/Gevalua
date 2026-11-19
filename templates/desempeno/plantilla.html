@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<p><a href="{% url 'plantillas' %}">← Plantillas</a></p>
+<h1>{{ plantilla.nombre }}</h1>
+<form method="post">{% csrf_token %}
+  <section class="tarjeta formulario">
+    {% for campo in form %}{% if campo.field.widget.input_type == "checkbox" %}<label class="casilla">{{ campo }} {{ campo.label }}</label>{% else %}<label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}{% endif %}{% endfor %}
+  </section>
+  <h2>Criterios</h2>
+  <p class="ayuda">Los pesos suman 100 %. Las oportunidades son un bono: si no ocurren, nadie pierde puntos.</p>
+  {% for e in formset.non_form_errors %}<p class="error">{{ e }}</p>{% endfor %}
+  {{ formset.management_form }}
+  <div class="tabla-envoltura"><table class="tabla">
+    <thead><tr><th>Orden</th><th>Tipo</th><th>Descripción</th><th>Peso %</th><th>Evidencia</th><th>Quitar</th></tr></thead>
+    <tbody>{% for f in formset %}<tr>{% for h in f.hidden_fields %}{{ h }}{% endfor %}
+      <td class="col-chica">{{ f.orden }}</td><td>{{ f.tipo }}</td><td>{{ f.descripcion }}{{ f.descripcion.errors }}</td><td class="col-chica">{{ f.peso }}{{ f.peso.errors }}</td><td>{{ f.evidencia_requerida }}</td><td>{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div>
+  <button class="boton">Guardar plantilla</button>
+</form>
+{% endblock %}

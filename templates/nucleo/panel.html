@@ -6,10 +6,10 @@
   {% if user.es_admin_empresa %}
   <a class="tarjeta enlace-tarjeta" href="{% url 'estructura' %}"><h2>Empresa y estructura</h2><p>Áreas, cargos, organigrama y personas.</p></a>
   <a class="tarjeta enlace-tarjeta" href="{% url 'ingresos' %}"><h2>Ingreso y contratación</h2><p>Expediente digital, lista de chequeo por etapa, antecedentes y alertas.</p></a>
-  <section class="tarjeta"><h2>Plantillas y periodos</h2><p>Plantillas de evaluación por periodicidad.</p><span class="pronto">Fase 1</span></section>
+  <a class="tarjeta enlace-tarjeta" href="{% url 'periodos' %}"><h2>Periodos y plantillas</h2><p>Plantillas de evaluación por periodicidad y concertaciones de cada periodo.</p></a>
   {% endif %}
   {% if user.es_jefe or user.es_admin_empresa %}
-  <a class="tarjeta enlace-tarjeta" href="{% url 'organigrama' %}"><h2>Mi equipo</h2><p>Tu equipo directo y, en cascada, los equipos de tus subordinados.</p></a>
+  <a class="tarjeta enlace-tarjeta" href="{% url 'equipo' %}"><h2>Mi equipo</h2><p>Metas, evidencias por revisar y evaluaciones de tu equipo directo y en cascada.</p></a>
   {% endif %}
   <section class="tarjeta"><h2>Repositorio</h2><p>Soportes y evaluaciones por empleado, área, periodo y tipo.</p><span class="pronto">Fase 1</span></section>
 </div>

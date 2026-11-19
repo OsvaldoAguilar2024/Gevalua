@@ -13,7 +13,9 @@ def portada_publica(request):
 @login_required
 def inicio(request):
     """Vista simple: solo lo pendiente del usuario."""
-    pendientes = []  # se llena con metas por aceptar, evidencias y firmas en la fase 1
+    from apps.desempeno.pendientes import pendientes_de
+
+    pendientes = pendientes_de(request.user)
     return render(request, "nucleo/inicio.html", {"pendientes": pendientes})
 
 

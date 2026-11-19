@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>Mi equipo</h1>
+{% if user.es_admin_empresa %}{% include "desempeno/_pestanas_admin.html" with activa="equipo" %}{% endif %}
+<section class="tarjeta"><h2>Equipo directo</h2>
+  <ul class="lista">{% for c in directas %}<li><a href="{% url 'concertacion' c.pk %}">{{ c.empleado }}</a> <span class="tenue">{{ c.periodo }} · {{ c.get_estado_display }}{% if c.n_pendientes %} · <strong>{{ c.n_pendientes }} evidencia{{ c.n_pendientes|pluralize }} por revisar</strong>{% endif %}</span></li>{% empty %}<li class="tenue">No hay concertaciones abiertas de tu equipo.</li>{% endfor %}</ul>
+</section>
+{% if cascada %}
+<section class="tarjeta"><h2>En cascada</h2>
+  <ul class="lista">{% for c in cascada %}<li><a href="{% url 'concertacion' c.pk %}">{{ c.empleado }}</a> <span class="tenue">jefe: {{ c.jefe }} · {{ c.periodo }} · {{ c.get_estado_display }}</span></li>{% endfor %}</ul>
+</section>
+{% endif %}
+{% endblock %}

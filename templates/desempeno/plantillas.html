@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>Evaluación de desempeño</h1>
+{% include "desempeno/_pestanas_admin.html" with activa="plantillas" %}
+<div class="rejilla">
+  <section class="tarjeta"><h2>Plantillas de la empresa</h2>
+    <ul class="lista">{% for p in plantillas %}<li><a href="{% url 'editar_plantilla' p.pk %}">{{ p.nombre }}</a> <span class="tenue">{{ p.get_periodicidad_display }} · {{ p.n }} criterios{% if not p.activa %} · inactiva{% endif %}</span></li>{% empty %}<li class="tenue">Aún no hay plantillas. En una empresa pequeña basta con la mensual y la anual.</li>{% endfor %}</ul>
+  </section>
+  {% if genericas %}
+  <section class="tarjeta"><h2>Copiar una plantilla genérica</h2>
+    <p class="ayuda">Todas usan la escala de 1 a 5 y los cuatro tipos de criterio. Después la ajustas a tus cargos.</p>
+    {% for clave, nombre in genericas %}
+      <form method="post">{% csrf_token %}<input type="hidden" name="periodicidad" value="{{ clave }}"><button class="boton chico secundario boton-lista">{{ nombre }}</button></form>
+    {% endfor %}
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

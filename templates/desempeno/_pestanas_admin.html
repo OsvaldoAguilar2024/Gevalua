@@ -1,0 +1,5 @@
+<nav class="pestanas">
+  <a {% if activa == "periodos" %}class="activa"{% endif %} href="{% url 'periodos' %}">Periodos</a>
+  <a {% if activa == "plantillas" %}class="activa"{% endif %} href="{% url 'plantillas' %}">Plantillas</a>
+  {% if user.empleado %}<a {% if activa == "equipo" %}class="activa"{% endif %} href="{% url 'equipo' %}">Mi equipo</a>{% endif %}
+</nav>

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>Evaluación de desempeño</h1>
+{% include "desempeno/_pestanas_admin.html" with activa="periodos" %}
+<div class="rejilla">
+  <section class="tarjeta"><h2>Periodos</h2>
+    <ul class="lista">{% for p in periodos %}<li><a href="{% url 'periodo' p.pk %}">{{ p.nombre }}</a> <span class="tenue">{{ p.plantilla.get_periodicidad_display }} · {{ p.fecha_inicio|date:"d/m" }}–{{ p.fecha_fin|date:"d/m/Y" }} · {{ p.n_aceptadas }}/{{ p.n }} concertadas · {{ p.n_cerradas }} evaluadas{% if p.estado == "cerrado" %} · cerrado{% endif %}</span></li>{% empty %}<li class="tenue">Aún no hay periodos.</li>{% endfor %}</ul>
+  </section>
+  <section class="tarjeta"><h2>Nuevo periodo</h2>
+    {% if hay_plantillas %}
+    <form method="post">{% csrf_token %}
+      {% for campo in form %}<label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}{% for e in campo.errors %}<p class="error">{{ e }}</p>{% endfor %}{% endfor %}
+      <button class="boton">Crear periodo</button>
+    </form>
+    {% else %}<p class="tenue">Primero <a href="{% url 'plantillas' %}">copia una plantilla</a>.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}
