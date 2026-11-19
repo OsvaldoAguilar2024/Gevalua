@@ -283,9 +283,9 @@ label.casilla input { width: 20px; height: 20px; }
 .rechazo { flex: 1 1 100%; }
 .rechazo input { flex: 1 1 160px; }
 .rechazo input { width: auto; padding: 8px; }
-.estado { font-size: 0.85rem; padding: 4px 10px; border-radius: 999px; background: var(--azul-claro); white-space: nowrap; }
-.estado-contratado { color: var(--verde); }
-.estado-descartado { color: var(--rojo); }
+.estado { font-size: 0.78rem; font-weight: 500; padding: 3px 10px; border-radius: 999px; background: var(--azul-claro); color: var(--azul); white-space: nowrap; }
+.estado-contratado { color: var(--verde); background: var(--verde-claro); }
+.estado-descartado { color: var(--rojo); background: var(--rojo-claro); }
 .boton[disabled] { opacity: 0.5; cursor: not-allowed; }
 .contratar { margin-top: 16px; border-top: 1px solid var(--borde); padding-top: 8px; }
 
