@@ -79,11 +79,39 @@ class EstructuraTests(TenantTestCase):
         self.assertTrue(e.usuario.has_usable_password())
 
     def test_correo_repetido(self):
+        persona("laura@prueba.co")
         self.c.force_login(self.admin)
         r = self.c.post(reverse("crear_empleado"), {
-            "nombre": "Otro", "email": "admin@prueba.co", "tipo_contrato": "indefinido", "estado": "activo",
+            "nombre": "Otro", "email": "laura@prueba.co", "tipo_contrato": "indefinido", "estado": "activo",
         })
         self.assertContains(r, "Ya hay una persona con ese correo")
+
+    def test_primer_admin_sin_ficha_se_completa_y_puede_ser_jefe(self):
+        self.c.force_login(self.admin)
+        r = self.c.get(reverse("empleados"))
+        self.assertContains(r, "todavía no tiene ficha")
+        inicial = self.c.get(reverse("crear_empleado") + "?email=admin@prueba.co").context["form"].initial
+        self.assertTrue(inicial["es_admin_empresa"])  # el formulario trae sus roles marcados
+        r = self.c.post(reverse("crear_empleado"), {
+            "nombre": "Martha Salazar", "email": "admin@prueba.co", "es_admin_empresa": "on", "es_jefe": "on",
+            "cargo": self.cargo.pk, "tipo_contrato": "indefinido", "estado": "activo",
+        })
+        self.assertEqual(r.status_code, 302)
+        e = Empleado.objects.get(usuario=self.admin)
+        self.admin.refresh_from_db()
+        self.assertTrue(self.admin.check_password("clave-segura-123"))  # conserva su contraseña
+        self.assertEqual(len(mail.outbox), 0)  # no se le manda otro enlace
+        self.assertNotContains(self.c.get(reverse("empleados")), "todavía no tiene ficha")
+        form = self.c.get(reverse("crear_empleado")).context["form"]
+        self.assertIn(e, form.fields["jefe"].queryset)
+
+    def test_admin_no_se_quita_su_propio_rol(self):
+        self.c.force_login(self.admin)
+        r = self.c.post(reverse("crear_empleado"), {
+            "nombre": "Martha", "email": "admin@prueba.co", "cargo": self.cargo.pk, "tipo_contrato": "indefinido", "estado": "activo",
+        })
+        self.assertContains(r, "No puedes quitarte a ti mismo el rol de administrador")
+        self.assertFalse(Empleado.objects.filter(usuario=self.admin).exists())
 
     def test_jefe_ve_solo_su_equipo(self):
         jefe = persona("jefe@prueba.co")

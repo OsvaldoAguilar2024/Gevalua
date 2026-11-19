@@ -291,7 +291,8 @@ label.casilla input { width: 20px; height: 20px; }
 
 /* Desempeño */
 .boton-lista { display: block; width: 100%; margin-top: 8px; text-align: left; }
-.col-chica { width: 80px; }
+.col-chica { width: 104px; min-width: 104px; }
+.col-chica input { min-width: 76px; padding: 11px 8px; text-align: center; }
 .fila-2 { display: grid; grid-template-columns: 1fr; gap: 0 12px; }
 @media (min-width: 600px) { .fila-2 { grid-template-columns: 2fr 1fr; } }
 .meta .peso { font-weight: 700; color: var(--azul); }

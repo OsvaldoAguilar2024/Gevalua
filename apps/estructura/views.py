@@ -94,6 +94,8 @@ class ListaEmpleados(AdminEmpresaRequerido, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx.update(areas=Area.objects.all(), estado=self.estado, area=self.area, q=self.q, estados=Empleado.Estado.choices)
+        # Administradores y jefes que entran pero no tienen ficha (p. ej. el primer administrador que crea el operador).
+        ctx["sin_ficha"] = Usuario.objects.filter(empleado__isnull=True, is_active=True).filter(Q(es_admin_empresa=True) | Q(es_jefe=True))
         return ctx
 
 
@@ -104,10 +106,28 @@ class CrearEmpleado(AdminEmpresaRequerido, FormularioGenericoMixin, CreateView):
     volver = reverse_lazy("empleados")
     success_url = reverse_lazy("empleados")
 
+    def get_initial(self):
+        # Desde el aviso de «personas sin ficha» llegan el correo y el nombre ya llenos.
+        inicial = super().get_initial()
+        for campo in ("email", "nombre"):
+            if self.request.GET.get(campo):
+                inicial[campo] = self.request.GET[campo]
+        existente = Usuario.objects.filter(email=inicial.get("email", "").strip().lower(), empleado__isnull=True).first()
+        if existente is not None:  # conserva los roles que ya tiene
+            for campo in ("nombre", "documento", "es_admin_empresa", "es_jefe", "es_consultor"):
+                inicial[campo] = getattr(existente, campo) or inicial.get(campo, "")
+        return inicial
+
+    def get_form_kwargs(self):
+        return {**super().get_form_kwargs(), "usuario_actual": self.request.user}
+
     def form_valid(self, form):
         respuesta = super().form_valid(form)
-        enviar_correo_activacion(self.request.tenant, self.object.usuario)
-        messages.info(self.request, f"Se envió a {self.object.usuario.email} el enlace para crear su contraseña.")
+        if form.usuario_existente is not None:
+            messages.info(self.request, f"{self.object.usuario.email} ya tenía cuenta: se le creó la ficha y conserva su contraseña.")
+        else:
+            enviar_correo_activacion(self.request.tenant, self.object.usuario)
+            messages.info(self.request, f"Se envió a {self.object.usuario.email} el enlace para crear su contraseña.")
         return respuesta
 
 
@@ -117,6 +137,9 @@ class EditarEmpleado(AdminEmpresaRequerido, FormularioGenericoMixin, UpdateView)
     form_class = FormularioEmpleado
     volver = reverse_lazy("empleados")
     success_url = reverse_lazy("empleados")
+
+    def get_form_kwargs(self):
+        return {**super().get_form_kwargs(), "usuario_actual": self.request.user}
 
 
 def reenviar_activacion(request, pk):

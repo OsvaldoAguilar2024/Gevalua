@@ -92,3 +92,12 @@ class Usuario(AbstractUser):
     @property
     def puede_ver_vista_completa(self):
         return self.es_admin_empresa or self.es_jefe or self.es_consultor
+
+
+class Operador(Usuario):
+    """Vista de los operadores de la plataforma (usuarios con is_staff en el esquema público) para el panel /operador/."""
+
+    class Meta:
+        proxy = True
+        verbose_name = "operador de la plataforma"
+        verbose_name_plural = "operadores de la plataforma"

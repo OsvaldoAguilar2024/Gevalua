@@ -57,9 +57,15 @@ Pruebas: `python manage.py test`
 
 ## Crear una empresa piloto
 
-Desde el panel del operador (`/operador/` → Empresas → Agregar): nombre, NIT, logo, subdominio y correo del primer administrador. La plataforma crea el esquema, registra `subdominio.g.oatech.com.co` y envía al administrador el enlace para crear su contraseña.
+Desde el panel del operador (`/operador/` → Empresas → Añadir): nombre, NIT, logo, subdominio y correo del primer administrador. La plataforma crea el esquema, registra `subdominio.g.oatech.com.co` y envía al administrador el enlace para crear su contraseña.
 
 También por consola: `python manage.py crear_empresa --help`.
+
+Si el primer administrador también es jefe, completa su ficha en Personas: la plataforma lo avisa con «Completar su ficha» y conserva su contraseña.
+
+## Cuentas de operador
+
+Un operador con permiso de administrar operadores (superusuario) crea las demás cuentas en `/operador/` → Operadores de la plataforma → Añadir: correo y nombre. La persona recibe el enlace para crear su contraseña y, al entrar, el código por correo. Sin marcar «Puede administrar otros operadores» solo crea y edita empresas, dominios y cursos. Las cuentas se desactivan, no se borran.
 
 ## Despliegue en Railway
 
