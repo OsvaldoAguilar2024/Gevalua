@@ -77,6 +77,14 @@ Variables del servicio web:
 | `DEFAULT_FROM_EMAIL` | `gevalua <no-responder@oatech.com.co>` |
 | `AWS_S3_BUCKET_NAME`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL`, `AWS_DEFAULT_REGION` | referencias a las variables del bucket de Railway |
 
+Variables opcionales de seguridad (por defecto encendidas):
+
+| Variable | Valor por defecto | Para qué |
+|---|---|---|
+| `SEGUNDO_FACTOR_OBLIGATORIO` | `true` | Código por correo después de la contraseña para administradores de empresa y operadores |
+| `SEGUNDO_FACTOR_EXENTOS` | `demo` | Esquemas sin segundo factor (la Empresa Demo usa correos que no existen) |
+| `AUTORIZACION_DATOS_OBLIGATORIA` | `true` | Pantalla de autorización de datos personales (Ley 1581) al primer ingreso |
+
 DNS: un registro comodín `*.g.oatech.com.co` hacia Railway evita registrar cada empresa por separado y no toca los demás subdominios de `oatech.com.co`. El panel queda en `gevalua.oatech.com.co`. Si cambia `BASE_DOMAIN`, `asegurar_publico` mueve los dominios de las empresas al nuevo patrón en el siguiente despliegue.
 
 Nunca se guardan claves en el repositorio.

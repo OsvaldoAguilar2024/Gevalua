@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block clase_body %}simple{% endblock %}
+{% block contenido %}
+<section class="tarjeta angosta">
+  <h1>Tus datos personales</h1>
+  <p>Antes de empezar, lee y acepta cómo {{ empresa.nombre }} trata tus datos.</p>
+  <div class="politica">{{ texto|linebreaks }}</div>
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <label class="casilla"><input type="checkbox" name="acepto" value="si" required> Leí y acepto la autorización de tratamiento de mis datos personales.</label>
+    <button class="boton grande">Aceptar y continuar</button>
+  </form>
+  <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="enlace">Ahora no, salir</button></form>
+</section>
+{% endblock %}

@@ -6,6 +6,8 @@ from . import views
 urlpatterns = [
     path("entrar/", views.Entrar.as_view(), name="login"),
     path("salir/", auth_views.LogoutView.as_view(), name="logout"),
+    path("verificar/", views.verificar, name="segundo_factor"),
+    path("datos-personales/", views.datos_personales, name="datos_personales"),
     path(
         "recuperar/",
         auth_views.PasswordResetView.as_view(
