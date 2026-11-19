@@ -231,8 +231,8 @@ def excel_documento(request, tipo, pk):
     return excel.respuesta(f"{tipo}-{c.periodo.nombre}-{c.empleado.usuario.get_full_name()}", hojas, titulo)
 
 
-def resultados(request):
-    """Resultados por persona, equipo y área. El resultado de un jefe combina el suyo con el de su equipo."""
+def calcular_resultados(request):
+    """Periodo elegido, notas cerradas y resultado en cascada de cada persona visible para el usuario."""
     u = request.user
     if not u.is_authenticated or not (u.es_admin_empresa or u.es_jefe or u.es_consultor):
         raise Http404
@@ -242,7 +242,7 @@ def resultados(request):
     else:  # por defecto, el periodo más reciente que ya tiene evaluaciones cerradas
         periodo = periodos.filter(concertaciones__evaluacion__fecha_cierre__isnull=False).distinct().first() or periodos.first()
     if periodo is None:
-        return render(request, "desempeno/resultados.html", {"periodos": periodos})
+        return {"periodos": periodos, "periodo": None}
     notas = {
         ev.concertacion.empleado_id: ev.nota_final
         for ev in Evaluacion.objects.filter(concertacion__periodo=periodo, fecha_cierre__isnull=False).select_related("concertacion")
@@ -268,16 +268,25 @@ def resultados(request):
         memo[e.pk] = r
         return r
 
-    if u.es_admin_empresa or u.es_consultor:
-        visibles = activos
-    else:
-        yo = empleado_de(u)
-        visibles = [yo] + yo.subordinados() if yo else []
+    from apps.estructura.alcance import ids_visibles
+
+    ids = ids_visibles(u)
+    visibles = activos if ids is None else [e for e in activos if e.pk in ids]
     filas = []
     for e in visibles:
         r = cascada(e)
         filas.append({"e": e, "propia": notas.get(e.pk), "cascada": r, "equipo": len(hijos.get(e.pk, [])),
                       "nivel": catalogo.nivel_de(r) if r is not None else ""})
+    return {"periodos": periodos, "periodo": periodo, "filas": filas, "hijos": hijos}
+
+
+def resultados(request):
+    """Resultados por persona, equipo y área. El resultado de un jefe combina el suyo con el de su equipo."""
+    datos = calcular_resultados(request)
+    periodos, periodo = datos["periodos"], datos["periodo"]
+    if periodo is None:
+        return render(request, "desempeno/resultados.html", {"periodos": periodos})
+    filas = datos["filas"]
     por_area = {}
     for f in filas:
         if f["propia"] is not None and f["e"].cargo_id:
@@ -294,3 +303,38 @@ def resultados(request):
         ], f"Resultados · {periodo.nombre}")
     registrar(request, "consultar_resultados", periodo)
     return render(request, "desempeno/resultados.html", {"periodos": periodos, "periodo": periodo, "filas": filas, "areas": areas})
+
+
+COLOR_NIVEL = {"Sobresaliente": "verde", "Satisfactorio": "azul", "En mejora": "ambar", "Insatisfactorio": "rojo"}
+
+
+def tablero_cascada(request):
+    """Tablero de resultados en cascada: el organigrama con la nota propia y la del equipo de cada jefe."""
+    datos = calcular_resultados(request)
+    periodo = datos["periodo"]
+    if periodo is None:
+        return render(request, "desempeno/cascada.html", {"periodos": datos["periodos"]})
+    filas = {f["e"].pk: f for f in datos["filas"]}
+    for f in filas.values():
+        f["color"] = COLOR_NIVEL.get(f["nivel"], "")
+        f["ancho"] = int(f["cascada"] * 20) if f["cascada"] is not None else 0  # escala 1 a 5 → 0 a 100 %
+
+    def nodo(f, vistos):
+        vistos = vistos | {f["e"].pk}
+        hijos = [filas[h.pk] for h in datos["hijos"].get(f["e"].pk, []) if h.pk in filas and h.pk not in vistos]
+        return {**f, "hijos": [nodo(h, vistos) for h in sorted(hijos, key=lambda x: str(x["e"]))]}
+
+    raices = [f for f in filas.values() if f["e"].jefe_id not in filas]
+    arbol = [nodo(f, set()) for f in sorted(raices, key=lambda x: (-len(datos["hijos"].get(x["e"].pk, [])), str(x["e"])))]
+    evaluados = [f for f in filas.values() if f["propia"] is not None]
+    distribucion = []
+    for nivel, color in COLOR_NIVEL.items():
+        n = sum(1 for f in evaluados if catalogo.nivel_de(f["propia"]) == nivel)
+        distribucion.append({"nivel": nivel, "color": color, "n": n, "pct": round(n * 100 / len(evaluados)) if evaluados else 0})
+    promedio = (sum(f["propia"] for f in evaluados) / len(evaluados)).quantize(Decimal("0.01")) if evaluados else None
+    registrar(request, "consultar_resultados", periodo, detalle="tablero en cascada")
+    return render(request, "desempeno/cascada.html", {
+        "periodos": datos["periodos"], "periodo": periodo, "arbol": arbol, "distribucion": distribucion,
+        "promedio": promedio, "evaluados": len(evaluados), "personas": len(filas),
+        "nivel_promedio": catalogo.nivel_de(promedio) if promedio is not None else "",
+    })

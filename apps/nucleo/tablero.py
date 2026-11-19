@@ -13,13 +13,16 @@ COLOR_NIVEL = {"Sobresaliente": "verde", "Satisfactorio": "azul", "En mejora": "
 
 
 def datos_panel(usuario):
-    ve_todo = usuario.es_admin_empresa or usuario.es_consultor
+    from apps.estructura.alcance import ids_como_consultor
+
     yo = getattr(usuario, "empleado", None)
     activos = Empleado.objects.filter(estado=Empleado.Estado.ACTIVO)
+    habilitados = ids_como_consultor(usuario) if usuario.es_consultor and not usuario.es_admin_empresa else set()
+    ve_todo = usuario.es_admin_empresa or habilitados is None
     if ve_todo:
         ids = list(activos.values_list("pk", flat=True))
     else:
-        ids = [e.pk for e in yo.subordinados()] if yo else []
+        ids = list(({e.pk for e in yo.subordinados()} if yo else set()) | habilitados)
 
     periodo = (
         Periodo.objects.filter(concertaciones__evaluacion__fecha_cierre__isnull=False).distinct().first()

@@ -1,0 +1,4 @@
+<nav class="pestanas">
+  <a class="{% if pestana == 'tabla' %}activa{% endif %}" href="{% url 'resultados' %}{% if periodo %}?periodo={{ periodo.pk }}{% endif %}">Tabla</a>
+  <a class="{% if pestana == 'cascada' %}activa{% endif %}" href="{% url 'tablero_cascada' %}{% if periodo %}?periodo={{ periodo.pk }}{% endif %}">Cascada</a>
+</nav>

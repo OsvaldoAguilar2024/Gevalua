@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>Empresa y estructura</h1>
+<nav class="pestanas">
+  <a href="{% url 'estructura' %}">Áreas y cargos</a>
+  <a href="{% url 'empleados' %}">Personas</a>
+  <a href="{% url 'organigrama' %}">Organigrama</a>
+  <a class="activa" href="{% url 'consultores' %}">Consultores</a>
+</nav>
+<p class="ayuda">Un consultor (auditor, asesor jurídico, socio) consulta y exporta en modo de solo lectura las evaluaciones, evidencias y resultados de lo que le habilites. Para agregar uno, créalo en Personas y marca «Consultor». Cada consulta queda en la auditoría.</p>
+<div class="tabla-envoltura"><table class="tabla">
+  <thead><tr><th>Consultor</th><th>Puede consultar</th><th></th></tr></thead>
+  <tbody>{% for f in filas %}<tr>
+    <td>{{ f.u }}<br><span class="tenue">{{ f.u.email }}</span></td>
+    <td>{% if f.resumen == "Nada habilitado" %}<span class="etiqueta ambar">Nada habilitado</span>{% elif f.resumen == "Toda la empresa" %}<span class="etiqueta azul">Toda la empresa</span>{% else %}{{ f.resumen|truncatechars:160 }}{% endif %}</td>
+    <td><a class="boton chico secundario" href="{% url 'permiso_consultor' f.u.pk %}">Editar</a></td>
+  </tr>{% empty %}<tr><td colspan="3" class="tenue">No hay consultores. Créalos en Personas marcando «Consultor».</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}

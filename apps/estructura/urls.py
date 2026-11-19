@@ -12,5 +12,7 @@ urlpatterns = [
     path("personas/nueva/", views.CrearEmpleado.as_view(), name="crear_empleado"),
     path("personas/<int:pk>/", views.EditarEmpleado.as_view(), name="editar_empleado"),
     path("personas/<int:pk>/reenviar/", views.reenviar_activacion, name="reenviar_activacion"),
+    path("consultores/", views.consultores, name="consultores"),
+    path("consultores/<int:pk>/", views.permiso_consultor, name="permiso_consultor"),
     path("organigrama/", views.Organigrama.as_view(), name="organigrama"),
 ]

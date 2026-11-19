@@ -16,4 +16,5 @@ urlpatterns = [
     path("pdf/<str:tipo>/<int:pk>/", views_evaluacion.pdf, name="pdf_desempeno"),
     path("excel/<str:tipo>/<int:pk>/", views_evaluacion.excel_documento, name="excel_desempeno"),
     path("resultados/", views_evaluacion.resultados, name="resultados"),
+    path("resultados/cascada/", views_evaluacion.tablero_cascada, name="tablero_cascada"),
 ]

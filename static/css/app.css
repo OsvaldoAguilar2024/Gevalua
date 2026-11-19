@@ -342,3 +342,16 @@ details.escala summary { cursor: pointer; font-weight: 600; }
 .casilla { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; margin: 12px 0; }
 .casilla input { width: auto; margin-top: 3px; }
 .politica { max-height: 45vh; overflow-y: auto; padding: 12px 14px; border: 1px solid var(--borde, #e4e7ec); border-radius: 10px; font-size: .92rem; margin-bottom: 8px; }
+
+/* --- Tablero de resultados en cascada --- */
+.cascada { list-style: none; margin: 0; padding: 0; }
+.cascada .cascada { padding-left: 22px; border-left: 2px solid var(--borde); margin-left: 16px; }
+.cascada summary { list-style: none; cursor: pointer; }
+.cascada summary::-webkit-details-marker { display: none; }
+.nodo-cascada { display: grid; grid-template-columns: minmax(0, 1.4fr) 1fr 44px; gap: 12px; align-items: center; padding: 8px 4px; border-bottom: 1px solid #f2f4f7; }
+.nodo-cascada .persona > span:last-child { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.nodo-cascada small { color: var(--tenue); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nota-cascada { text-align: right; font-weight: 600; }
+details > summary .nodo-cascada strong::after { content: " ▸"; color: var(--tenue); font-weight: 400; }
+details[open] > summary .nodo-cascada strong::after { content: " ▾"; }
+@media (max-width: 600px) { .nodo-cascada { grid-template-columns: 1fr 44px; } .nodo-cascada .pista { display: none; } }

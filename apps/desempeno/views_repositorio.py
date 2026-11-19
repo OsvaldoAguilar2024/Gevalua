@@ -36,12 +36,10 @@ def exportar(request, tipo, qs, filtros):
 
 def alcance(usuario):
     """IDs de empleados cuyos soportes puede ver; None = todos."""
-    if usuario.es_admin_empresa:
-        return None
-    yo = empleado_de(usuario)
-    if yo is None:
-        return []
-    return [yo.pk] + [e.pk for e in yo.subordinados()]
+    from apps.estructura.alcance import ids_visibles
+
+    ids = ids_visibles(usuario)
+    return None if ids is None else list(ids)
 
 
 def repositorio(request):
