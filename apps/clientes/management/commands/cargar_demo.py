@@ -18,6 +18,10 @@ from apps.clientes.models import Dominio, Empresa
 SUB = "demo"
 
 
+# Los correos de demo no dependen del dominio de entrada, para no cambiar los usuarios existentes.
+CORREO_DEMO = "demo.oatech.com.co"
+
+
 class Command(BaseCommand):
     help = "Crea la Empresa Demo (demo.<BASE_DOMAIN>) con datos de ejemplo."
 
@@ -55,7 +59,7 @@ class Datos:
         from apps.estructura.models import Area, Cargo, Empleado
 
         U = Usuario
-        dominio = f"{SUB}.{settings.BASE_DOMAIN}"
+        dominio = CORREO_DEMO
 
         def usuario(local, nombre, doc, **roles):
             u = U(email=f"{local}@{dominio}", nombre=nombre, documento=doc, acepto_tratamiento_datos=timezone.now(), **roles)

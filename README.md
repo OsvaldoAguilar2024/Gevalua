@@ -9,7 +9,7 @@ La fuente de verdad del producto es el documento *Plataforma de evaluación de d
 | Pieza | Decisión |
 |---|---|
 | Aplicación | Django 5.2 con plantillas, un solo frontend responsivo mobile-first, instalable como PWA |
-| Separación por empresa | `django-tenants`: un esquema de Postgres por empresa, elegido por subdominio (`cliente.oatech.com.co`) |
+| Separación por empresa | `django-tenants`: un esquema de Postgres por empresa, elegido por subdominio (`cliente.g.oatech.com.co`) |
 | Base de datos | Postgres en Railway |
 | Archivos | Railway Storage Buckets (API S3, `django-storages`), bucket privado y URL firmada de 5 minutos |
 | Correo | Resend con `django-anymail` |
@@ -57,7 +57,7 @@ Pruebas: `python manage.py test`
 
 ## Crear una empresa piloto
 
-Desde el panel del operador (`/operador/` → Empresas → Agregar): nombre, NIT, logo, subdominio y correo del primer administrador. La plataforma crea el esquema, registra `subdominio.oatech.com.co` y envía al administrador el enlace para crear su contraseña.
+Desde el panel del operador (`/operador/` → Empresas → Agregar): nombre, NIT, logo, subdominio y correo del primer administrador. La plataforma crea el esquema, registra `subdominio.g.oatech.com.co` y envía al administrador el enlace para crear su contraseña.
 
 También por consola: `python manage.py crear_empresa --help`.
 
@@ -71,13 +71,13 @@ Variables del servicio web:
 |---|---|
 | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
 | `SECRET_KEY` | cadena aleatoria larga |
-| `BASE_DOMAIN` | `oatech.com.co` |
+| `BASE_DOMAIN` | `g.oatech.com.co` (cada empresa en `<subdominio>.g.oatech.com.co`) |
 | `PUBLIC_DOMAINS` | `gevalua.oatech.com.co` |
 | `RESEND_API_KEY` | clave de Resend (la pone el dueño en Railway) |
 | `DEFAULT_FROM_EMAIL` | `gevalua <no-responder@oatech.com.co>` |
 | `AWS_S3_BUCKET_NAME`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL`, `AWS_DEFAULT_REGION` | referencias a las variables del bucket de Railway |
 
-DNS: un registro comodín `*.oatech.com.co` hacia Railway evita registrar cada subdominio por separado.
+DNS: un registro comodín `*.g.oatech.com.co` hacia Railway evita registrar cada empresa por separado y no toca los demás subdominios de `oatech.com.co`. El panel queda en `gevalua.oatech.com.co`. Si cambia `BASE_DOMAIN`, `asegurar_publico` mueve los dominios de las empresas al nuevo patrón en el siguiente despliegue.
 
 Nunca se guardan claves en el repositorio.
 

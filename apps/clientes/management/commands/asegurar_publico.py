@@ -24,9 +24,22 @@ class Command(BaseCommand):
             )
             if nuevo:
                 self.stdout.write(f"Dominio público registrado: {dominio}")
+        self.mover_al_dominio_base(publico)
         # Primer operador de la plataforma: se crea una sola vez y recibe su enlace por correo.
         email = os.environ.get("OPERADOR_EMAIL", "").strip().lower()
         if email and not Usuario.objects.filter(email=email).exists():
             crear_usuario_y_activar(publico, email, is_staff=True, is_superuser=True)
             self.stdout.write(f"Operador creado: se envió el enlace de activación a {email}")
         self.stdout.write(self.style.SUCCESS("Espacio común listo."))
+
+    def mover_al_dominio_base(self, publico):
+        """Si cambia BASE_DOMAIN, cada empresa pasa a <subdominio>.BASE_DOMAIN y se quita el dominio viejo."""
+        sufijo = f".{settings.BASE_DOMAIN}"
+        for d in Dominio.objects.filter(is_primary=True).exclude(tenant=publico).select_related("tenant"):
+            if d.domain.endswith((sufijo, ".localhost")) or d.domain in settings.PUBLIC_DOMAINS:
+                continue
+            nuevo = f"{d.domain.split('.')[0]}{sufijo}"
+            viejo = d.domain
+            d.domain = nuevo
+            d.save(update_fields=["domain"])
+            self.stdout.write(f"Dominio de {d.tenant.nombre}: {viejo} -> {nuevo}")

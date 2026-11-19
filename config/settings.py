@@ -27,12 +27,15 @@ SECRET_KEY = os.environ.get("SECRET_KEY") or ("dev-inseguro-solo-local" if DEBUG
 if not SECRET_KEY:
     raise RuntimeError("Falta la variable de entorno SECRET_KEY")
 
-# Dominio base: cada empresa vive en <subdominio>.BASE_DOMAIN
-BASE_DOMAIN = os.environ.get("BASE_DOMAIN", "oatech.com.co")
+# Dominio base: cada empresa vive en <subdominio>.BASE_DOMAIN (p. ej. cliente.g.oatech.com.co),
+# así no se cruza con otros subdominios de la organización.
+BASE_DOMAIN = os.environ.get("BASE_DOMAIN", "g.oatech.com.co")
+# Dominio de la organización para correo y panel (no cambia con BASE_DOMAIN).
+DOMINIO_ORGANIZACION = os.environ.get("DOMINIO_ORGANIZACION", "oatech.com.co")
 RAILWAY_PUBLIC_DOMAIN = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "")
 
 # Dominios del espacio común (panel del operador). Se registran con `asegurar_publico`.
-PUBLIC_DOMAINS = env_list("PUBLIC_DOMAINS", f"gevalua.{BASE_DOMAIN}")
+PUBLIC_DOMAINS = env_list("PUBLIC_DOMAINS", f"gevalua.{DOMINIO_ORGANIZACION}")
 if RAILWAY_PUBLIC_DOMAIN and RAILWAY_PUBLIC_DOMAIN not in PUBLIC_DOMAINS:
     PUBLIC_DOMAINS.append(RAILWAY_PUBLIC_DOMAIN)
 if DEBUG:
@@ -188,7 +191,7 @@ STORAGES = {
 TAMANO_MAXIMO_SOPORTE_MB = 20
 
 # --- Correo (Resend) --------------------------------------------------------
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", f"gevalua <no-responder@{BASE_DOMAIN}>")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", f"gevalua <no-responder@{DOMINIO_ORGANIZACION}>")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 if os.environ.get("RESEND_API_KEY"):
     EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
@@ -199,7 +202,7 @@ else:
 # --- Notificaciones push (Web Push con claves VAPID) ---
 VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
-VAPID_SUB = os.environ.get("VAPID_SUB", f"mailto:soporte@{BASE_DOMAIN}")
+VAPID_SUB = os.environ.get("VAPID_SUB", f"mailto:soporte@{DOMINIO_ORGANIZACION}")
 
 # --- Respaldos (bucket aparte de Railway durante el piloto) ---
 RESPALDO_BUCKET = os.environ.get("RESPALDO_BUCKET", "")

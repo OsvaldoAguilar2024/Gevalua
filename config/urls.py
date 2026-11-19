@@ -1,4 +1,4 @@
-"""Rutas del espacio de cada empresa (cliente.oatech.com.co)."""
+"""Rutas del espacio de cada empresa (cliente.g.oatech.com.co)."""
 
 from django.urls import include, path
 
