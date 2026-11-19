@@ -2,6 +2,7 @@
 
 from django.urls import include, path
 
+from apps.entrenamientos.views import verificar as verificar_certificado
 from apps.nucleo import views
 
 urlpatterns = [
@@ -16,4 +17,6 @@ urlpatterns = [
     path("firmar/", include("apps.firmas.urls")),
     path("avisos/", include("apps.notificaciones.urls")),
     path("repositorio/", include("apps.desempeno.urls_repositorio")),
+    path("entrenamientos/", include("apps.entrenamientos.urls")),
+    path("verificar/<str:codigo>/", verificar_certificado, name="verificar_certificado"),
 ]

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block clase_body %}{% if user.puede_ver_vista_completa %}completa{% else %}simple{% endif %}{% endblock %}
+{% block contenido %}
+<p><a href="{% url 'curso_asignado' a.pk %}">← {{ c.titulo }}</a></p>
+<h1>Examen · intento {{ numero }} de {{ c.max_intentos|add:a.intentos_extra }}</h1>
+<p class="ayuda">Responde todas las preguntas. Necesitas {{ c.nota_minima }} % para aprobar. Si sales sin enviar, el intento sigue abierto con las mismas preguntas.</p>
+<form method="post">{% csrf_token %}
+  {% for p, opciones in preguntas %}
+  <section class="tarjeta">
+    <p><strong>{{ forloop.counter }}. {{ p.enunciado|linebreaksbr }}</strong></p>
+    {% for letra, texto in opciones %}
+    <label class="casilla"><input type="radio" name="p-{{ p.pk }}" value="{{ letra }}" required> {{ texto }}</label>
+    {% endfor %}
+  </section>
+  {% endfor %}
+  <button class="boton grande">Enviar respuestas</button>
+</form>
+{% endblock %}

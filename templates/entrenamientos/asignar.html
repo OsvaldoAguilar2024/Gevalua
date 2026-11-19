@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<p><a href="{% url 'catalogo_cursos' %}">← Catálogo</a></p>
+<section class="tarjeta angosta">
+  <h1>Asignar «{{ c.titulo }}»</h1>
+  <p class="ayuda">Elige personas, cargos o áreas (puedes combinar). Mantén presionado Ctrl o ⌘ para elegir varias. Quien ya lo tenga asignado no se duplica.</p>
+  <form method="post">{% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for campo in form %}<label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}{{ campo.errors }}{% endfor %}
+    <button class="boton grande">Asignar y avisar</button>
+  </form>
+</section>
+{% endblock %}

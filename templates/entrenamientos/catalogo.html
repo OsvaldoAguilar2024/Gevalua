@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>Entrenamientos</h1>
+{% include "entrenamientos/_pestanas.html" with pestana="catalogo" %}
+<p class="ayuda">Cursos grabados por Gio Consultoría para todas las empresas. Asígnalos a personas, cargos o áreas; si aprueban el examen, el certificado queda en su expediente.</p>
+<div class="rejilla">
+{% for c in cursos %}
+  <section class="tarjeta">
+    <h2>{{ c.titulo }}</h2>
+    {% if c.descripcion %}<p>{{ c.descripcion|truncatechars:180 }}</p>{% endif %}
+    <p class="tenue">{{ c.horas }} h · {{ c.duracion_minutos }} min de video · {{ c.n_preguntas }} preguntas · nota mínima {{ c.nota_minima }} %{% if c.vigencia_meses %} · vence a los {{ c.vigencia_meses }} meses{% endif %}</p>
+    {% if c.cargos_sugeridos %}<p class="tenue">Aplica a: {{ c.cargos_sugeridos }}</p>{% endif %}
+    <p>{% if c.asignados %}<span class="etiqueta azul">{{ c.asignados }} asignado{{ c.asignados|pluralize }}</span> <span class="etiqueta verde">{{ c.aprobados }} aprobado{{ c.aprobados|pluralize }}</span>{% endif %}</p>
+    <a class="boton chico" href="{% url 'asignar_curso' c.pk %}">Asignar</a>
+    {% if c.asignados %}<a class="boton chico secundario" href="{% url 'seguimiento_cursos' %}?curso={{ c.pk }}">Ver avance</a>{% endif %}
+  </section>
+{% empty %}
+  <section class="tarjeta vacia"><p class="grande">Aún no hay cursos publicados.</p><p>Gio Consultoría los publica desde el panel del operador.</p></section>
+{% endfor %}
+</div>
+{% endblock %}

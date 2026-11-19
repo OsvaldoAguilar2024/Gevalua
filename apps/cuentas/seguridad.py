@@ -23,7 +23,7 @@ CLAVE_SESION = "segundo_factor"
 
 # Rutas que se pueden usar antes del segundo factor o de la autorización de datos.
 RUTAS_LIBRES = ("/cuenta/verificar/", "/cuenta/salir/", "/cuenta/datos-personales/", "/operador/logout/",
-                "/static/", "/salud/", "/sw.js", "/manifest.webmanifest", "/ingreso/firma/")
+                "/static/", "/salud/", "/sw.js", "/manifest.webmanifest", "/ingreso/firma/", "/verificar/")
 
 
 def es_publico(request):

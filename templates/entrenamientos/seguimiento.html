@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>Entrenamientos</h1>
+{% include "entrenamientos/_pestanas.html" with pestana="seguimiento" %}
+<form class="filtros" method="get">
+  <select name="curso"><option value="">Todos los cursos</option>{% for c in cursos %}<option value="{{ c.pk }}" {% if f.curso == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.titulo }}</option>{% endfor %}</select>
+  <select name="area"><option value="">Todas las áreas</option>{% for a in areas %}<option value="{{ a.pk }}" {% if f.area == a.pk|stringformat:"s" %}selected{% endif %}>{{ a }}</option>{% endfor %}</select>
+  <select name="estado"><option value="">Todos los estados</option>{% for v, n in estados %}<option value="{{ v }}" {% if f.estado == v %}selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+  <input type="text" name="q" value="{{ f.q }}" placeholder="Buscar persona">
+  <button class="boton chico">Filtrar</button>
+  <button class="boton chico secundario" name="formato" value="xlsx">Exportar a Excel</button>
+</form>
+<div class="tabla-envoltura"><table class="tabla">
+  <thead><tr><th>Persona</th><th>Curso</th><th>Video</th><th>Intentos</th><th>Fecha límite</th><th>Estado</th></tr></thead>
+  <tbody>{% for a in filas %}<tr>
+    <td>{{ a.empleado }}<br><span class="tenue">{{ a.empleado.cargo.area.nombre|default:"" }}</span></td>
+    <td><a href="{% url 'curso_asignado' a.pk %}">{{ a.curso.titulo }}</a></td>
+    <td><div class="barra-avance"><span style="width: {{ a.avance }}%"></span></div><span class="tenue">{{ a.avance }} %</span></td>
+    <td>{{ a.intentos_terminados.count }} / {{ a.curso.max_intentos|add:a.intentos_extra }}</td>
+    <td>{{ a.fecha_limite|date:"d/m/Y"|default:"—" }}</td>
+    <td><span class="etiqueta {{ a.color }}">{{ a.etiqueta }}</span></td>
+  </tr>{% empty %}<tr><td colspan="6" class="tenue">Sin asignaciones.</td></tr>{% endfor %}</tbody>
+</table></div>
+{% endblock %}

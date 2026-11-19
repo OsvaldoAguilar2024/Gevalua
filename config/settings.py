@@ -62,6 +62,7 @@ SHARED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.admin",
     "apps.cuentas",
+    "apps.cursos",
     "storages",
     "anymail",
 ]
@@ -79,6 +80,7 @@ TENANT_APPS = [
     "apps.firmas",
     "apps.desempeno",
     "apps.notificaciones",
+    "apps.entrenamientos",
 ]
 
 INSTALLED_APPS = list(SHARED_APPS) + [a for a in TENANT_APPS if a not in SHARED_APPS]

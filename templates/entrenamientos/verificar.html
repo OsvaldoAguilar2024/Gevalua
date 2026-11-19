@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block clase_body %}simple{% endblock %}
+{% block contenido %}
+<section class="tarjeta angosta">
+  <h1>Verificación de certificado</h1>
+  {% if cert %}
+    <p>{% if cert.vencido %}<span class="etiqueta rojo">Vencido el {{ cert.vence|date:"d/m/Y" }}</span>{% else %}<span class="etiqueta verde">Certificado válido</span>{% endif %}</p>
+    <table class="tabla">
+      <tr><th>Persona</th><td>{{ cert.nombre }}</td></tr>
+      <tr><th>Documento</th><td>{% if cert.documento %}••••{{ cert.documento|slice:"-4:" }}{% else %}—{% endif %}</td></tr>
+      <tr><th>Curso</th><td>{{ cert.curso_titulo }}</td></tr>
+      <tr><th>Horas</th><td>{{ cert.horas }}</td></tr>
+      <tr><th>Emitido</th><td>{{ cert.emitido|date:"d/m/Y" }}</td></tr>
+      <tr><th>Vence</th><td>{{ cert.vence|date:"d/m/Y"|default:"No vence" }}</td></tr>
+      <tr><th>Emite</th><td>{{ empresa.nombre }}{% if cert.responsable %} · {{ cert.responsable }}{% endif %}</td></tr>
+      <tr><th>Código</th><td>{{ cert.codigo }}</td></tr>
+    </table>
+    <p class="ayuda">Certificado interno emitido en la plataforma gevalua.</p>
+  {% else %}
+    <p><span class="etiqueta rojo">No encontrado</span></p>
+    <p>No existe un certificado con el código «{{ codigo }}» en {{ empresa.nombre }}.</p>
+  {% endif %}
+</section>
+{% endblock %}
