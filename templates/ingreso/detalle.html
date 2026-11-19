@@ -50,6 +50,7 @@
         </form>
       </details>
       {% endif %}
+      {% if r.firma %}{% include "ingreso/_firma_contrato.html" %}{% endif %}
       {% if r.estado == "cargado" %}
       <div class="acciones">
         <form method="post" action="{% url 'verificar_requisito' r.pk 'verificar' %}">{% csrf_token %}<button class="boton chico">Verificar</button></form>

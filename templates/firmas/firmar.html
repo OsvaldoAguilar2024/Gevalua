@@ -5,6 +5,7 @@
 <section class="tarjeta angosta">
   <h1>Firmar</h1>
   <p><strong>{{ m.titulo }}</strong></p>
+  {% if m.archivo_url %}<p><a href="{{ m.archivo_url }}" target="_blank" rel="noopener">Abrir el documento</a></p>{% endif %}
   <p class="ayuda">{{ texto }}</p>
   <form method="post">{% csrf_token %}
     <input type="hidden" name="accion" value="enviar_codigo">

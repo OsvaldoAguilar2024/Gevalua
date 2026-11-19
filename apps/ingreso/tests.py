@@ -110,3 +110,93 @@ class IngresoTests(TenantTestCase):
         u = Usuario.objects.create_user("n@prueba.co", "clave-segura-123", nombre="Nueva Persona")
         Empleado.objects.create(usuario=u, fecha_ingreso=date.today() - timedelta(days=50))
         self.assertContains(self.c.get(reverse("alertas")), "Nueva Persona")
+
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend", MEDIA_ROOT=MEDIA)
+class FirmaContratoTests(TenantTestCase):
+    """Firma electrónica del contrato: el candidato por enlace en su correo y la empresa con su cuenta."""
+
+    @classmethod
+    def setup_tenant(cls, tenant):
+        tenant.nombre = "Empresa de prueba"
+        tenant.nit = "900123456-8"
+
+    def setUp(self):
+        import re
+
+        self.re = re
+        self.c = TenantClient(self.tenant)
+        self.admin = Usuario.objects.create_user("admin@prueba.co", "clave-segura-123", es_admin_empresa=True, nombre="Ana Gerente")
+        self.c.force_login(self.admin)
+        cargo = Cargo.objects.create(area=Area.objects.create(nombre="Operación"), nombre="Auxiliar")
+        self.p = ProcesoIngreso.objects.create(
+            candidato_nombre="Carlos Díaz", candidato_documento="1020304050", candidato_email="carlos@correo.co",
+            cargo=cargo, etapa=Etapa.CONTRATO,
+        )
+        self.req = self.p.requisitos.get(tipo="contrato")
+        self.c.post(reverse("cargar_requisito", args=[self.req.pk]), {
+            "archivo": SimpleUploadedFile("contrato.pdf", b"%PDF-1.4 contrato", content_type="application/pdf"),
+        })
+        self.req.refresh_from_db()
+
+    def ultimo_codigo(self):
+        return self.re.search(r"\b(\d{6})\b", mail.outbox[-1].subject).group(1)
+
+    def enlace_candidato(self):
+        mail.outbox.clear()
+        self.c.post(reverse("enviar_a_firma", args=[self.req.pk]))
+        self.assertEqual(mail.outbox[0].to, ["carlos@correo.co"])
+        return self.re.search(r"https?://[^/]+(/ingreso/firma/[^/\s]+/)", mail.outbox[0].body).group(1)
+
+    def firma_candidato(self, ruta):
+        anonimo = TenantClient(self.tenant)
+        self.assertEqual(anonimo.get(ruta).status_code, 200)
+        anonimo.post(ruta, {"accion": "enviar_codigo"})
+        self.assertEqual(mail.outbox[-1].to, ["carlos@correo.co"])
+        anonimo.post(ruta, {"accion": "firmar", "codigo": self.ultimo_codigo()})
+        return anonimo
+
+    def firma_empresa(self):
+        ruta = reverse("firmar", args=["contrato", self.req.pk])
+        self.c.post(ruta, {"accion": "enviar_codigo"})
+        self.c.post(ruta, {"accion": "firmar", "codigo": self.ultimo_codigo()})
+
+    def test_las_dos_firmas_verifican_el_requisito(self):
+        from apps.firmas.models import Firma
+
+        self.assertTrue(self.req.huella_archivo)
+        self.firma_candidato(self.enlace_candidato())
+        self.req.refresh_from_db()
+        self.assertEqual(self.req.estado, RequisitoIngreso.Estado.CARGADO)
+        f = Firma.objects.get(documento_tipo="contrato", calidad="Trabajador")
+        self.assertIsNone(f.firmante)
+        self.assertEqual((f.firmante_documento, f.firmante_email), ("1020304050", "carlos@correo.co"))
+        self.firma_empresa()
+        self.req.refresh_from_db()
+        self.assertEqual(self.req.estado, RequisitoIngreso.Estado.VERIFICADO)
+        self.assertEqual(self.req.verificado_por, self.admin)
+        self.assertContains(self.c.get(reverse("proceso", args=[self.p.pk])), "firmó el")
+
+    def test_codigo_incorrecto_no_firma(self):
+        from apps.firmas.models import Firma
+
+        ruta = self.enlace_candidato()
+        anonimo = TenantClient(self.tenant)
+        anonimo.post(ruta, {"accion": "enviar_codigo"})
+        anonimo.post(ruta, {"accion": "firmar", "codigo": "000000" if self.ultimo_codigo() != "000000" else "111111"})
+        self.assertFalse(Firma.objects.filter(documento_tipo="contrato").exists())
+
+    def test_cambiar_el_contrato_invalida_enlace_y_firmas(self):
+        ruta = self.enlace_candidato()
+        self.firma_empresa()
+        self.c.post(reverse("cargar_requisito", args=[self.req.pk]), {
+            "archivo": SimpleUploadedFile("contrato-v2.pdf", b"%PDF-1.4 otro contrato", content_type="application/pdf"),
+        })
+        self.assertEqual(TenantClient(self.tenant).get(ruta).status_code, 410)
+        self.req.refresh_from_db()
+        from .firma_contrato import estado
+
+        self.assertIsNone(estado(self.req)["empleador"])
+
+    def test_token_inventado_no_existe(self):
+        self.assertEqual(TenantClient(self.tenant).get("/ingreso/firma/inventado/").status_code, 404)

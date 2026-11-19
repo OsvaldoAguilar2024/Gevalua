@@ -13,6 +13,11 @@ from apps.estructura.models import Empleado
 from apps.nucleo.auditoria import registrar
 from apps.nucleo.permisos import AdminEmpresaRequerido
 
+from apps.desempeno.forms import FormularioCodigo
+from apps.firmas import servicios as firmas
+from apps.firmas.models import CodigoFirma
+
+from . import firma_contrato
 from .forms import FormularioCargaRequisito, FormularioContratacion, FormularioProceso, ItemsPlantillaFormSet
 from .models import Etapa, PlantillaRequisitos, ProcesoIngreso, RequisitoIngreso
 
@@ -66,6 +71,11 @@ def detalle(request, pk):
     indice_actual = [v for v, _ in Etapa.choices].index(proceso.etapa)
     for i, (valor, nombre) in enumerate(Etapa.choices):
         reqs = list(proceso.requisitos_de(valor).select_related("verificado_por"))
+        for r in reqs:
+            if r.es_contrato and r.archivo:
+                r.firma = firma_contrato.estado(r)
+                r.firma["se_puede"] = firma_contrato.se_puede_firmar(r)
+                r.firma["ultimo_envio"] = r.envios_firma.first()
         etapas.append({
             "valor": valor, "nombre": nombre, "requisitos": reqs,
             "actual": valor == proceso.etapa,
@@ -89,10 +99,13 @@ def cargar_requisito(request, pk):
             req = form.save(commit=False)
             if "archivo" in request.FILES:
                 req.nombre_archivo = request.FILES["archivo"].name[:255]
+                req.huella_archivo = ""  # se recalcula con el archivo nuevo; las firmas del anterior dejan de valer
             req.estado = RequisitoIngreso.Estado.CARGADO
             req.cargado_por, req.cargado_en = request.user, timezone.now()
             req.verificado_por = req.verificado_en = None
             req.save()
+            if req.es_contrato and req.archivo:
+                firma_contrato.asegurar_huella(req)
             registrar(request, "cargar", req, detalle=req.nombre_archivo)
             messages.success(request, f"{req.nombre}: cargado. Falta verificarlo.")
         else:
@@ -118,6 +131,67 @@ def verificar_requisito(request, pk, decision):
         req.save()
         registrar(request, decision, req)
     return redirect(f"/ingreso/{req.proceso_id}/#req-{req.pk}")
+
+
+def enviar_a_firma(request, pk):
+    """Envía al candidato el enlace para firmar el contrato."""
+    solo_admin(request)
+    req = get_object_or_404(RequisitoIngreso.objects.select_related("proceso__cargo"), pk=pk)
+    if request.method == "POST":
+        if not firma_contrato.se_puede_firmar(req):
+            messages.error(request, "Carga el contrato antes de enviarlo a firma.")
+        elif not req.proceso.candidato_email:
+            messages.error(request, "Falta el correo del candidato en el proceso.")
+        elif firma_contrato.estado(req)["candidato"]:
+            messages.info(request, "El candidato ya firmó este contrato.")
+        else:
+            firma_contrato.enviar_enlace(request, req)
+            messages.success(request, f"Enviamos el contrato a {req.proceso.candidato_email} para que lo firme.")
+    return redirect(f"/ingreso/{req.proceso_id}/#req-{req.pk}")
+
+
+def firma_candidato(request, token):
+    """Página pública (sin cuenta) donde el candidato lee y firma su contrato con el código de su correo."""
+    envio = firma_contrato.envio_por_token(token)
+    req = envio.requisito
+    if not envio.vigente or not firma_contrato.se_puede_firmar(req):
+        return render(request, "ingreso/firma_candidato.html", {"invalido": True, "empresa": request.tenant}, status=410)
+    firmante = firma_contrato.firmante_candidato(envio)
+    ya_firmo = firma_contrato.estado(req)["candidato"]
+    titulo = firma_contrato.titulo(req)
+    form = FormularioCodigo(request.POST or None)
+    if request.method == "POST" and not ya_firmo:
+        if request.POST.get("accion") == "enviar_codigo":
+            reciente = CodigoFirma.objects.filter(
+                documento_tipo=firma_contrato.TIPO, documento_id=req.pk, usuario__isnull=True, email=firmante.email,
+                creado__gte=timezone.now() - timedelta(minutes=1),
+            ).exists()
+            if not reciente:
+                firmas.enviar_codigo(request, firma_contrato.TIPO, req.pk, firma_contrato.contenido(req), titulo, firmante)
+            messages.info(request, f"Te enviamos un código a {firmante.email}. Vence en 10 minutos.")
+            return redirect(request.path)
+        if request.POST.get("accion") == "firmar" and form.is_valid():
+            try:
+                firmas.firmar(request, firma_contrato.TIPO, req.pk, firma_contrato.contenido(req), titulo,
+                              form.cleaned_data["codigo"], firma_contrato.CALIDAD_CANDIDATO, firmante)
+            except firmas.ErrorFirma as e:
+                messages.error(request, str(e))
+                return redirect(request.path)
+            firma_contrato.completar_si_firmado(request, req)
+            messages.success(request, "Firmaste tu contrato. Gracias.")
+            return redirect(request.path)
+    return render(request, "ingreso/firma_candidato.html", {
+        "req": req, "titulo": titulo, "form": form, "ya_firmo": ya_firmo, "token": token, "empresa": request.tenant,
+        "texto": firmas.TEXTO_ACEPTACION.format(titulo=titulo, email=firmante.email),
+    })
+
+
+def archivo_candidato(request, token):
+    envio = firma_contrato.envio_por_token(token)
+    if not envio.vigente or not envio.requisito.archivo:
+        raise Http404
+    registrar(request, "descargar", envio.requisito, detalle=f"candidato por enlace · {envio.enviado_a}")
+    return redirect(envio.requisito.archivo.url)  # URL firmada que vence en 5 minutos
 
 
 def descargar_requisito(request, pk):

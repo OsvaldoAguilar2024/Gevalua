@@ -172,6 +172,7 @@ class RequisitoIngreso(models.Model):
     fuente_url = models.URLField(blank=True)
     archivo = models.FileField(upload_to=RutaPrivada("ingreso"), blank=True, validators=[validar_soporte])
     nombre_archivo = models.CharField(max_length=255, blank=True)
+    huella_archivo = models.CharField("hash SHA-256 del archivo", max_length=64, blank=True)
     fecha_documento = models.DateField("fecha del documento", null=True, blank=True)
     estado = models.CharField(max_length=20, choices=Estado.choices, default=Estado.PENDIENTE)
     observacion = models.TextField(blank=True)
@@ -207,6 +208,36 @@ class RequisitoIngreso(models.Model):
         return self.tipo == TipoRequisito.ANTECEDENTES
 
     @property
+    def es_contrato(self):
+        return self.tipo == TipoRequisito.CONTRATO
+
+    @property
     def es_sensible(self):
         """Hojas de vida, exámenes médicos y antecedentes: solo los ve talento humano."""
         return self.tipo in {TipoRequisito.HOJA_VIDA, TipoRequisito.EXAMEN, TipoRequisito.ANTECEDENTES}
+
+
+class EnvioFirmaContrato(models.Model):
+    """Enlace que recibe el candidato en su correo para firmar el contrato sin tener cuenta todavía.
+
+    Solo se guarda la huella del enlace; si el contrato cambia, el enlace deja de servir.
+    """
+
+    VIGENCIA = timedelta(days=7)
+
+    requisito = models.ForeignKey(RequisitoIngreso, on_delete=models.CASCADE, related_name="envios_firma")
+    token_hash = models.CharField(max_length=64, unique=True)
+    enviado_a = models.EmailField()
+    huella_archivo = models.CharField(max_length=64)
+    enviado_por = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+")
+    creado = models.DateTimeField(auto_now_add=True)
+    expira = models.DateTimeField()
+
+    class Meta:
+        verbose_name = "envío de contrato a firma"
+        verbose_name_plural = "envíos de contrato a firma"
+        ordering = ["-creado"]
+
+    @property
+    def vigente(self):
+        return self.expira > timezone.now() and self.huella_archivo == self.requisito.huella_archivo
