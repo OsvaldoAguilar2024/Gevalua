@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es-CO"><head><meta charset="utf-8">
+<style>
+  @page { size: letter; margin: 18mm 16mm; @bottom-right { content: "Página " counter(page) " de " counter(pages); font-size: 8pt; color: #666; } }
+  body { font-family: "DejaVu Sans", sans-serif; font-size: 9.5pt; color: #1b2430; }
+  h1 { font-size: 15pt; margin: 0 0 4px; } h2 { font-size: 11pt; margin: 16px 0 6px; border-bottom: 1px solid #ccc; padding-bottom: 3px; }
+  .cabecera { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .logo { max-height: 40px; }
+  table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #d6dde6; padding: 5px; text-align: left; vertical-align: top; }
+  th { background: #eef3f8; font-size: 8.5pt; }
+  .tenue { color: #5b6675; } .nota { font-size: 20pt; font-weight: bold; }
+  .firma { margin-bottom: 8px; padding: 6px; border: 1px solid #d6dde6; font-size: 8.5pt; }
+  .mono { font-family: "DejaVu Sans Mono", monospace; font-size: 7.5pt; word-break: break-all; }
+</style></head>
+<body>
+<div class="cabecera">
+  <div><h1>{% if tipo == "evaluacion" %}Evaluación de desempeño{% else %}Concertación de metas{% endif %}</h1>
+    <div class="tenue">{{ empresa.nombre }} · NIT {{ empresa.nit }}</div></div>
+  {% if empresa.logo %}<img class="logo" src="{{ empresa.logo.url }}">{% endif %}
+</div>
+<table>
+  <tr><th>Empleado</th><td>{{ c.empleado.usuario.get_full_name }} · {{ c.empleado.usuario.documento }}</td><th>Cargo</th><td>{{ c.empleado.cargo.nombre|default:"—" }}</td></tr>
+  <tr><th>Jefe</th><td>{{ c.jefe.usuario.get_full_name }}</td><th>Periodo</th><td>{{ c.periodo.nombre }} ({{ c.periodo.fecha_inicio|date:"d/m/Y" }} a {{ c.periodo.fecha_fin|date:"d/m/Y" }})</td></tr>
+</table>
+<h2>Metas</h2>
+<table>
+  <tr><th>Meta</th><th>Tipo</th><th>Indicador / objetivo</th><th>Peso</th>{% if tipo == "evaluacion" %}<th>Auto</th><th>Jefe</th><th>Evid.</th>{% endif %}</tr>
+  {% for m in metas %}<tr><td>{{ m.descripcion }}{% if tipo == "evaluacion" and m.calificacion.comentario %}<br><span class="tenue">{{ m.calificacion.comentario }}</span>{% endif %}</td><td>{{ m.get_tipo_display }}</td><td>{{ m.indicador }} {{ m.valor_objetivo }}</td><td>{{ m.peso }} %</td>
+  {% if tipo == "evaluacion" %}<td>{{ m.calificacion.autoevaluacion|default:"—" }}</td><td>{{ m.calificacion.nota_jefe|default:"—" }}</td><td>{{ m.evidencias.all|length }}</td>{% endif %}</tr>{% endfor %}
+</table>
+{% if tipo == "evaluacion" %}
+<h2>Resultado</h2>
+<p><span class="nota">{{ ev.nota_final|default:"—" }}</span> {{ ev.nivel }}</p>
+{% if ev.fortalezas %}<p><strong>Fortalezas:</strong> {{ ev.fortalezas }}</p>{% endif %}
+{% if ev.aspectos_mejorar %}<p><strong>Aspectos a mejorar:</strong> {{ ev.aspectos_mejorar }}</p>{% endif %}
+{% if ev.plan_siguiente %}<p><strong>Plan para el siguiente periodo:</strong> {{ ev.plan_siguiente }}</p>{% endif %}
+{% if ev.recomendacion %}<p><strong>Recomendación:</strong> {{ ev.get_recomendacion_display }}</p>{% endif %}
+{% if acciones %}<h2>Acciones de mejora</h2><table><tr><th>Acción</th><th>Compromiso</th><th>Estado</th></tr>{% for a in acciones %}<tr><td>{{ a.descripcion }}</td><td>{{ a.fecha_compromiso|date:"d/m/Y" }}</td><td>{{ a.get_estado_display }}</td></tr>{% endfor %}</table>{% endif %}
+{% endif %}
+<h2>Anexo de evidencias de firma electrónica</h2>
+{% for f in firmas %}
+<div class="firma"><strong>{{ f.firmante_nombre }}</strong> ({{ f.calidad }}) · documento {{ f.firmante_documento|default:"—" }} · {{ f.firmante_email }}<br>
+Fecha: {{ f.fecha|date:"d/m/Y H:i:s" }} · IP {{ f.ip|default:"—" }} · método: código de un solo uso por correo<br>
+Huella SHA-256 del documento: <span class="mono">{{ f.huella_documento }}</span><br>
+<span class="tenue">{{ f.texto_aceptacion }}</span></div>
+{% empty %}<p class="tenue">Sin firmas todavía.</p>{% endfor %}
+<p class="tenue">Generado el {{ generado|date:"d/m/Y H:i" }} por gevalua. La plataforma registra el historial de desempeño; las decisiones laborales siguen siendo criterio del empleador y su asesor jurídico.</p>
+</body></html>

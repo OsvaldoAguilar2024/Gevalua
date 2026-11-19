@@ -2,7 +2,9 @@
 
 from django.urls import reverse
 
-from .models import Concertacion, Evidencia, Periodo
+from apps.firmas.models import Firma
+
+from .models import Concertacion, Evaluacion, Evidencia, Periodo
 
 
 def pendientes_de(usuario):
@@ -24,4 +26,15 @@ def pendientes_de(usuario):
     n = por_revisar.count()
     if n:
         items.append({"texto": f"Revisar {n} evidencia{'s' if n != 1 else ''} de tu equipo", "url": reverse("equipo")})
+    for c in abiertas.filter(empleado=yo, estado=Concertacion.Estado.ACEPTADA, periodo__plantilla__requiere_autoevaluacion=True).filter(
+        evaluacion__autoevaluacion_enviada__isnull=True
+    ):
+        items.append({"texto": f"Hacer mi autoevaluación de {c.periodo}", "url": reverse("evaluacion", args=[c.pk])})
+    firmadas = Firma.objects.filter(documento_tipo="evaluacion", firmante=usuario).values_list("documento_id", flat=True)
+    for ev in Evaluacion.objects.filter(concertacion__empleado=yo, fecha_cierre__isnull=False).exclude(concertacion_id__in=firmadas).select_related("concertacion__periodo"):
+        items.append({"texto": f"Firmar mi evaluación de {ev.concertacion.periodo}", "url": reverse("evaluacion", args=[ev.concertacion_id])})
+    from django.utils import timezone
+
+    for c in abiertas.filter(jefe=yo, estado=Concertacion.Estado.ACEPTADA, periodo__fecha_fin__lte=timezone.localdate()):
+        items.append({"texto": f"Evaluar a {c.empleado.usuario.get_short_name()} ({c.periodo})", "url": reverse("evaluacion", args=[c.pk])})
     return items

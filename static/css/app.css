@@ -157,3 +157,15 @@ label.casilla input { width: 20px; height: 20px; }
 .subir-foto { position: relative; }
 .nombre-archivo { display: block; font-size: 0.85rem; font-weight: 400; }
 .acciones input[type=text] { flex: 1 1 200px; width: auto; padding: 8px; }
+
+/* Evaluación */
+.escala-botones { display: flex; gap: 6px; margin-bottom: 6px; }
+.escala-botones label { margin: 0; }
+.escala-botones input { position: absolute; opacity: 0; }
+.escala-botones span { display: inline-grid; place-items: center; width: 44px; height: 44px; border: 2px solid var(--borde); border-radius: 10px; font-weight: 700; cursor: pointer; }
+.escala-botones input:checked + span { background: var(--azul); border-color: var(--azul); color: #fff; }
+.escala-botones input:focus-visible + span { outline: 3px solid var(--azul-claro); }
+.resultado { text-align: center; }
+.nota-grande { font-size: 3rem; font-weight: 800; margin: 0; color: var(--azul); }
+.problemas { color: var(--rojo); padding-left: 18px; }
+details.escala summary { cursor: pointer; font-weight: 600; }

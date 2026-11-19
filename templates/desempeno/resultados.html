@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>Resultados</h1>
+{% if periodos %}
+<form class="filtros" method="get">
+  <select name="periodo">{% for p in periodos %}<option value="{{ p.pk }}" {% if p == periodo %}selected{% endif %}>{{ p.nombre }}</option>{% endfor %}</select>
+  <button class="boton chico">Ver</button>
+</form>
+{% endif %}
+{% if periodo %}
+<p class="ayuda">El resultado en cascada de un jefe combina su propia nota (50 %) con el promedio de su equipo (50 %).</p>
+<div class="tabla-envoltura"><table class="tabla">
+  <thead><tr><th>Persona</th><th>Cargo</th><th>Nota propia</th><th>En cascada</th><th>Nivel</th></tr></thead>
+  <tbody>{% for f in filas %}<tr><td>{{ f.e }}{% if f.equipo %} <span class="tenue">· {{ f.equipo }} a cargo</span>{% endif %}</td><td>{{ f.e.cargo.nombre|default:"—" }}</td><td>{{ f.propia|default:"—" }}</td><td>{{ f.cascada|default:"—" }}</td><td>{{ f.nivel }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% if areas %}<h2>Por área</h2><div class="tabla-envoltura"><table class="tabla"><thead><tr><th>Área</th><th>Promedio</th><th>Evaluados</th></tr></thead><tbody>{% for a in areas %}<tr><td>{{ a.area }}</td><td>{{ a.promedio }}</td><td>{{ a.n }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+{% else %}<p class="tenue">Aún no hay periodos.</p>{% endif %}
+{% endblock %}

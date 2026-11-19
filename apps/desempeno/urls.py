@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views_evidencias, views_metas
+from . import views_evaluacion, views_evidencias, views_metas
 
 urlpatterns = [
     path("plantillas/", views_metas.plantillas, name="plantillas"),
@@ -12,4 +12,7 @@ urlpatterns = [
     path("meta/<int:pk>/evidencia/", views_evidencias.subir, name="subir_evidencia"),
     path("evidencia/<int:pk>/archivo/", views_evidencias.descargar, name="descargar_evidencia"),
     path("evidencia/<int:pk>/<str:decision>/", views_evidencias.revisar, name="revisar_evidencia"),
+    path("evaluacion/<int:pk>/", views_evaluacion.evaluacion, name="evaluacion"),
+    path("pdf/<str:tipo>/<int:pk>/", views_evaluacion.pdf, name="pdf_desempeno"),
+    path("resultados/", views_evaluacion.resultados, name="resultados"),
 ]

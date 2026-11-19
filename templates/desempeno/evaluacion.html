@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block clase_body %}{% if rol == "empleado" %}simple{% else %}completa{% endif %}{% endblock %}
+{% block contenido %}
+<p><a href="{% url 'concertacion' c.pk %}">← Metas y evidencias</a></p>
+<div class="encabezado"><h1>Evaluación · {{ c.periodo }}</h1>{% if ev.cerrada %}<span class="estado estado-contratado">Cerrada</span>{% endif %}</div>
+<p class="tenue">{{ c.empleado }} · jefe: {{ c.jefe }}</p>
+
+{% if ev.cerrada %}
+<section class="tarjeta resultado">
+  <p class="nota-grande">{{ ev.nota_final }}</p>
+  <p><strong>{{ ev.nivel }}</strong></p>
+  <p class="tenue">Cerrada el {{ ev.fecha_cierre|date:"d/m/Y" }}</p>
+  <a class="boton secundario" href="{% url 'pdf_desempeno' 'evaluacion' c.pk %}" target="_blank">Descargar PDF</a>
+  {% if rol == "empleado" and not empleado_firmo %}<a class="boton" href="{% url 'firmar' 'evaluacion' c.pk %}">Firmar mi evaluación</a>{% endif %}
+</section>
+{% elif nota_previa %}
+<p class="ayuda">Nota calculada hasta ahora: <strong>{{ nota_previa }}</strong></p>
+{% endif %}
+
+<details class="tarjeta escala"><summary>Escala de 1 a 5</summary>
+  <ul class="lista">{% for v, n, d in escala %}<li><strong>{{ v }} · {{ n }}</strong> <span class="tenue">{{ d }}</span></li>{% endfor %}</ul>
+</details>
+
+<form method="post">{% csrf_token %}
+  <input type="hidden" name="accion" value="{% if rol == 'empleado' %}autoevaluacion{% else %}calificar{% endif %}">
+  {% for m in metas %}
+  <section class="tarjeta meta">
+    <div class="encabezado"><strong>{{ m.descripcion }}</strong><span class="peso">{{ m.peso }} %{% if m.es_bono %} bono{% endif %}</span></div>
+    <p class="tenue">{{ m.evidencias.all|length }} evidencia{{ m.evidencias.all|length|pluralize }}{% if m.indicador %} · {{ m.indicador }}{% endif %}{% if m.valor_objetivo %} · objetivo {{ m.valor_objetivo }}{% endif %}</p>
+    <div class="fila-2">
+      <div>
+        <label>Autoevaluación</label>
+        {% if rol == "empleado" and abierta and not ev.autoevaluacion_enviada %}
+          <div class="escala-botones">{% for v, n, d in escala reversed %}<label><input type="radio" name="auto-{{ m.pk }}" value="{{ v }}" {% if m.calificacion.autoevaluacion == v %}checked{% endif %}><span>{{ v }}</span></label>{% endfor %}</div>
+          <textarea name="auto-com-{{ m.pk }}" rows="2" placeholder="Comentario (opcional)">{{ m.calificacion.comentario_empleado }}</textarea>
+        {% else %}
+          <p>{{ m.calificacion.autoevaluacion|default:"—" }}{% if m.calificacion.comentario_empleado %} · <span class="tenue">{{ m.calificacion.comentario_empleado }}</span>{% endif %}</p>
+        {% endif %}
+      </div>
+      <div>
+        <label>Nota del jefe</label>
+        {% if rol == "jefe" and abierta %}
+          <div class="escala-botones">{% for v, n, d in escala reversed %}<label><input type="radio" name="nota-{{ m.pk }}" value="{{ v }}" {% if m.calificacion.nota_jefe == v %}checked{% endif %}><span>{{ v }}</span></label>{% endfor %}</div>
+          <textarea name="com-{{ m.pk }}" rows="2" placeholder="Comentario">{{ m.calificacion.comentario }}</textarea>
+          {% if m.calificacion.nota_jefe and m.calificacion.nota_jefe < umbral and not m.acciones_mejora.all %}<p class="error">Requiere acción de mejora.</p>{% endif %}
+        {% elif ev.cerrada or rol != "empleado" %}
+          <p>{{ m.calificacion.nota_jefe|default:"—" }}{% if m.calificacion.comentario %} · <span class="tenue">{{ m.calificacion.comentario }}</span>{% endif %}</p>
+        {% else %}<p class="tenue">Pendiente</p>{% endif %}
+      </div>
+    </div>
+  </section>
+  {% endfor %}
+
+  {% if form_cierre %}
+  <section class="tarjeta">
+    <h2>Cierre</h2>
+    {% for campo in form_cierre %}<label for="{{ campo.id_for_label }}">{{ campo.label|capfirst }}</label>{{ campo }}{% endfor %}
+  </section>
+  <button class="boton">Guardar calificación</button>
+  {% endif %}
+  {% if rol == "empleado" and abierta and not ev.autoevaluacion_enviada %}
+  <button class="boton secundario grande">Guardar</button>
+  <button class="boton grande" name="enviar" value="1">Enviar autoevaluación</button>
+  {% endif %}
+</form>
+{% if ev.cerrada %}
+<section class="tarjeta">
+  {% if ev.fortalezas %}<h3>Fortalezas</h3><p>{{ ev.fortalezas|linebreaksbr }}</p>{% endif %}
+  {% if ev.aspectos_mejorar %}<h3>Aspectos a mejorar</h3><p>{{ ev.aspectos_mejorar|linebreaksbr }}</p>{% endif %}
+  {% if ev.plan_siguiente %}<h3>Plan para el siguiente periodo</h3><p>{{ ev.plan_siguiente|linebreaksbr }}</p>{% endif %}
+  {% if ev.recomendacion %}<p><strong>Recomendación:</strong> {{ ev.get_recomendacion_display }}</p>{% endif %}
+</section>
+{% endif %}
+
+<section class="tarjeta"><h2>Acciones de mejora</h2>
+  <ul class="lista">{% for a in acciones %}<li>{{ a.descripcion }} <span class="tenue">{% if a.meta %}{{ a.meta.descripcion|truncatechars:40 }} · {% endif %}compromiso {{ a.fecha_compromiso|date:"d/m/Y" }} · {{ a.get_estado_display }}</span></li>{% empty %}<li class="tenue">Ninguna.</li>{% endfor %}</ul>
+  {% if form_accion %}
+  <details><summary>Agregar acción de mejora</summary>
+    <form method="post">{% csrf_token %}<input type="hidden" name="accion" value="accion_mejora">
+      {% for campo in form_accion %}<label for="{{ campo.id_for_label }}">{{ campo.label|capfirst }}</label>{{ campo }}{% for e in campo.errors %}<p class="error">{{ e }}</p>{% endfor %}{% endfor %}
+      <button class="boton chico">Agregar</button>
+    </form>
+  </details>
+  {% endif %}
+</section>
+
+{% if rol == "jefe" and abierta %}
+<section class="tarjeta">
+  <h2>Cerrar y firmar</h2>
+  {% if problemas %}<ul class="problemas">{% for p in problemas %}<li>{{ p }}</li>{% endfor %}</ul>
+  {% else %}<p>Todo listo. Al firmar se cierra la evaluación y el resultado sube en cascada.</p>
+  <a class="boton" href="{% url 'firmar' 'evaluacion' c.pk %}">Cerrar y firmar evaluación</a>{% endif %}
+</section>
+{% endif %}
+
+{% if firmas %}<section class="tarjeta firmas"><h2>Firmas</h2><ul class="lista">{% for f in firmas %}<li>{{ f.firmante_nombre }} ({{ f.calidad }}) · {{ f.fecha|date:"d/m/Y H:i" }} · huella <code>{{ f.huella_documento|slice:":12" }}…</code></li>{% endfor %}</ul></section>{% endif %}
+{% endblock %}

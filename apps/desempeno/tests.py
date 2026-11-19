@@ -42,9 +42,9 @@ class ConcertacionTests(TenantTestCase):
         self.periodo = Periodo.objects.get()
         self.c.post(reverse("periodo", args=[self.periodo.pk]), {"accion": "generar"})
 
-    def firmar_como(self, usuario, conc):
+    def firmar_como(self, usuario, conc, tipo="concertacion"):
         self.c.force_login(usuario)
-        url = reverse("firmar", args=["concertacion", conc.pk])
+        url = reverse("firmar", args=[tipo, conc.pk])
         mail.outbox.clear()
         self.c.post(url, {"accion": "enviar_codigo"})
         codigo = re.search(r"\b(\d{6})\b", mail.outbox[0].subject).group(1)
@@ -181,3 +181,82 @@ class EvidenciasTests(ConcertacionTests):
         self.c.force_login(self.emp.usuario)
         self.c.post(reverse("subir_evidencia", args=[conc.metas.first().pk]), {"enlace": "https://ejemplo.co/x"})
         self.assertFalse(Evidencia.objects.exists())
+
+
+from decimal import Decimal
+
+from .models import AccionMejora, Calificacion, Evaluacion
+
+
+class CalculoNotaTests(TenantTestCase):
+    @classmethod
+    def setup_tenant(cls, tenant):
+        tenant.nombre = "Empresa de prueba"
+        tenant.nit = "900123456-9"
+
+    def preparar(self, notas):
+        jefe = persona("j@x.co")
+        emp = persona("e@x.co", jefe=jefe)
+        plantilla = Plantilla.copiar_generica("mensual")  # 60, 15, 15 y 10 de bono
+        periodo = Periodo.objects.create(nombre="P", plantilla=plantilla, fecha_inicio=date(2026, 1, 1), fecha_fin=date(2026, 1, 31), fecha_limite=date(2026, 2, 5))
+        c = Concertacion.objects.create(empleado=emp, jefe=jefe, periodo=periodo)
+        c.crear_metas_desde_plantilla()
+        for m, n in zip(c.metas.all(), notas):
+            Calificacion.objects.create(meta=m, nota_jefe=n)
+        return Evaluacion.objects.create(concertacion=c)
+
+    def test_sin_oportunidades_se_reescala(self):
+        ev = self.preparar([4, 4, 4, None])
+        self.assertEqual(ev.calcular(), Decimal("4.00"))
+
+    def test_bono_suma(self):
+        ev = self.preparar([4, 4, 4, 5])
+        self.assertEqual(ev.calcular(), Decimal("4.10"))
+
+    def test_bono_bajo_no_resta(self):
+        ev = self.preparar([4, 4, 4, 1])
+        self.assertEqual(ev.calcular(), Decimal("4.00"))
+
+    def test_niveles(self):
+        from .catalogo import nivel_de
+
+        self.assertEqual(nivel_de(Decimal("4.5")), "Sobresaliente")
+        self.assertEqual(nivel_de(Decimal("4.49")), "Satisfactorio")
+        self.assertEqual(nivel_de(Decimal("2.5")), "En mejora")
+        self.assertEqual(nivel_de(Decimal("2.4")), "Insatisfactorio")
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class EvaluacionFlujoTests(EvidenciasTests):
+    def test_cierre_con_firma_y_pdf(self):
+        conc = self.concertada()
+        self.c.force_login(self.jefe.usuario)
+        metas = list(conc.metas.all())
+        datos = {"accion": "calificar"}
+        for m in metas:
+            datos[f"nota-{m.pk}"] = "2" if m == metas[0] else "4"
+        self.c.post(reverse("evaluacion", args=[conc.pk]), datos)
+        # nota 2 exige acción de mejora: aún no se puede firmar
+        r = self.c.get(reverse("evaluacion", args=[conc.pk]))
+        self.assertContains(r, "registra una acción de mejora")
+        self.c.post(reverse("evaluacion", args=[conc.pk]), {
+            "accion": "accion_mejora", "meta": metas[0].pk, "descripcion": "Plan de visitas semanal", "fecha_compromiso": "2027-02-01",
+        })
+        self.assertEqual(AccionMejora.objects.count(), 1)
+        self.firmar_como(self.jefe.usuario, conc, "evaluacion")
+        conc.refresh_from_db()
+        self.assertEqual(conc.estado, Concertacion.Estado.CERRADA)
+        ev = conc.evaluacion
+        self.assertIsNotNone(ev.fecha_cierre)
+        self.assertEqual(ev.nivel, "En mejora")  # (2*60 + 4*15 + 4*15) / 90 = 2.67 sin bono; con bono (240+40)/100 = 2.8
+        # el empleado firma su evaluación
+        self.firmar_como(self.emp.usuario, conc, "evaluacion")
+        self.assertEqual(Firma.objects.filter(documento_tipo="evaluacion", documento_id=conc.pk).count(), 2)
+        # PDF
+        r = self.c.get(reverse("pdf_desempeno", args=["evaluacion", conc.pk]))
+        self.assertEqual(r["Content-Type"], "application/pdf")
+        self.assertTrue(r.content.startswith(b"%PDF"))
+        # resultados en cascada para el gerente
+        self.c.force_login(self.gerente.usuario)
+        r = self.c.get(reverse("resultados"))
+        self.assertContains(r, str(ev.nota_final).replace(".", ","))

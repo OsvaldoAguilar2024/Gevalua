@@ -41,6 +41,12 @@
   <form method="post">{% csrf_token %}<button class="enlace" name="accion" value="devolver">Corregir metas antes de que {{ c.empleado.usuario.get_short_name }} firme</button></form>
 {% endif %}
 
+{% if c.estado == "aceptada" or c.estado == "cerrada" %}
+  <div class="acciones">
+    <a class="boton" href="{% url 'evaluacion' c.pk %}">{% if c.estado == "cerrada" %}Ver evaluación{% elif rol == "empleado" %}Autoevaluación{% else %}Evaluar{% endif %}</a>
+    <a class="boton secundario" href="{% url 'pdf_desempeno' 'concertacion' c.pk %}" target="_blank">PDF de la concertación</a>
+  </div>
+{% endif %}
 {% if firmas %}
 <section class="tarjeta firmas"><h2>Firmas</h2>
   <ul class="lista">{% for f in firmas %}<li>{{ f.firmante_nombre }} ({{ f.calidad }}) · {{ f.fecha|date:"d/m/Y H:i" }} · código por correo · huella <code>{{ f.huella_documento|slice:":12" }}…</code></li>{% endfor %}</ul>
