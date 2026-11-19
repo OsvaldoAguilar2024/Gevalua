@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block clase_body %}simple{% endblock %}
+{% block contenido %}
+<h1>Hola, {{ user.get_short_name }}</h1>
+<p class="roles">{{ user.roles|join:" · " }}</p>
+{% if pendientes %}
+  <ul class="pendientes">
+    {% for p in pendientes %}<li><a class="boton grande" href="{{ p.url }}">{{ p.texto }}</a></li>{% endfor %}
+  </ul>
+{% else %}
+  <section class="tarjeta vacia">
+    <p class="grande">No tienes nada pendiente.</p>
+    <p>Aquí verás las metas por aceptar, las evidencias por subir y las firmas pendientes.</p>
+  </section>
+{% endif %}
+{% if user.puede_ver_vista_completa %}
+  <p><a class="boton secundario" href="{% url 'panel' %}">Ir al panel de {% if user.es_admin_empresa %}la empresa{% else %}mi equipo{% endif %}</a></p>
+{% endif %}
+{% endblock %}

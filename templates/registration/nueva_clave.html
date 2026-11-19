@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block clase_body %}simple{% endblock %}
+{% block contenido %}
+<section class="tarjeta angosta">
+  {% if validlink %}
+  <h1>Crea tu contraseña</h1>
+  <form method="post">{% csrf_token %}
+    {{ form.non_field_errors }}
+    <label for="id_new_password1">Nueva contraseña</label>
+    {{ form.new_password1 }}
+    {% for e in form.new_password1.errors %}<p class="error">{{ e }}</p>{% endfor %}
+    <p class="ayuda">Mínimo 10 caracteres. Evita tu nombre o claves comunes.</p>
+    <label for="id_new_password2">Repítela</label>
+    {{ form.new_password2 }}
+    {% for e in form.new_password2.errors %}<p class="error">{{ e }}</p>{% endfor %}
+    <button class="boton grande">Guardar</button>
+  </form>
+  {% else %}
+  <h1>Enlace vencido</h1>
+  <p>Este enlace ya se usó o venció. <a href="{% url 'recuperar' %}">Pide uno nuevo</a>.</p>
+  {% endif %}
+</section>
+{% endblock %}

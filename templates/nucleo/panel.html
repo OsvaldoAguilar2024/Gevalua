@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>Panel</h1>
+<div class="rejilla">
+  {% if user.es_admin_empresa %}
+  <section class="tarjeta"><h2>Empresa y estructura</h2><p>Áreas, cargos, organigrama y usuarios.</p><span class="pronto">Fase 1</span></section>
+  <section class="tarjeta"><h2>Ingresos</h2><p>Expediente digital y lista de chequeo por etapa.</p><span class="pronto">Fase 1</span></section>
+  <section class="tarjeta"><h2>Plantillas y periodos</h2><p>Plantillas de evaluación por periodicidad.</p><span class="pronto">Fase 1</span></section>
+  {% endif %}
+  {% if user.es_jefe or user.es_admin_empresa %}
+  <section class="tarjeta"><h2>Mi equipo</h2><p>Concertación de metas, evidencias por revisar y calificaciones.</p><span class="pronto">Fase 1</span></section>
+  {% endif %}
+  <section class="tarjeta"><h2>Repositorio</h2><p>Soportes y evaluaciones por empleado, área, periodo y tipo.</p><span class="pronto">Fase 1</span></section>
+</div>
+{% endblock %}

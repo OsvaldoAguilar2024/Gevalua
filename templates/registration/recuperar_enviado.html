@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block clase_body %}simple{% endblock %}
+{% block contenido %}
+<section class="tarjeta angosta">
+  <h1>Revisa tu correo</h1>
+  <p>Si el correo está registrado, en unos minutos te llega el enlace. Revisa también la carpeta de spam.</p>
+  <p><a href="{% url 'login' %}">Volver a entrar</a></p>
+</section>
+{% endblock %}

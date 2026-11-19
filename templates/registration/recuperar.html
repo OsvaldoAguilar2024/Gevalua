@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block clase_body %}simple{% endblock %}
+{% block contenido %}
+<section class="tarjeta angosta">
+  <h1>Recuperar contraseña</h1>
+  <p>Escribe tu correo y te enviamos un enlace para crear una nueva.</p>
+  <form method="post">{% csrf_token %}
+    <label for="id_email">Correo</label>
+    {{ form.email }}
+    <button class="boton grande">Enviar enlace</button>
+  </form>
+</section>
+{% endblock %}

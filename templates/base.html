@@ -1,0 +1,39 @@
+{% load static %}<!doctype html>
+<html lang="es-CO">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f4e79">
+  <title>{% block titulo %}{% if empresa %}{{ empresa.nombre }}{% else %}gevalua{% endif %}{% endblock %}</title>
+  {% if empresa %}<link rel="manifest" href="{% url 'manifest' %}">{% endif %}
+  <link rel="icon" href="{% static 'img/icono-192.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'img/icono-192.png' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body class="{% block clase_body %}{% endblock %}">
+  <header class="barra">
+    <a class="marca" href="/">
+      {% if empresa and empresa.logo %}<img src="{{ empresa.logo.url }}" alt="" class="logo">{% endif %}
+      <span>{% if empresa %}{{ empresa.nombre }}{% else %}gevalua{% endif %}</span>
+    </a>
+    {% if user.is_authenticated and empresa %}
+    <nav class="menu">
+      {% if user.puede_ver_vista_completa %}
+        <a href="{% url 'inicio' %}">Mis pendientes</a>
+        <a href="{% url 'panel' %}">Panel</a>
+      {% endif %}
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="enlace">Salir</button></form>
+    </nav>
+    {% endif %}
+  </header>
+  <main class="contenido">
+    {% for m in messages %}<p class="aviso aviso-{{ m.tags }}">{{ m }}</p>{% endfor %}
+    {% block contenido %}{% endblock %}
+  </main>
+  {% if empresa %}
+  <script>
+    if ("serviceWorker" in navigator) { navigator.serviceWorker.register("/sw.js"); }
+  </script>
+  {% endif %}
+</body>
+</html>

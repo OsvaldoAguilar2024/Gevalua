@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block clase_body %}simple{% endblock %}
+{% block contenido %}
+<section class="tarjeta angosta">
+  <h1>Listo</h1>
+  <p>Tu contraseña quedó guardada.</p>
+  <a class="boton grande" href="{% url 'login' %}">Entrar</a>
+</section>
+{% endblock %}
