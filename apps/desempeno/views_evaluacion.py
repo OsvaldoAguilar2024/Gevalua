@@ -201,7 +201,10 @@ def resultados(request):
     if not u.is_authenticated or not (u.es_admin_empresa or u.es_jefe or u.es_consultor):
         raise Http404
     periodos = Periodo.objects.select_related("plantilla")
-    periodo = periodos.filter(pk=request.GET.get("periodo")).first() if request.GET.get("periodo") else periodos.first()
+    if request.GET.get("periodo"):
+        periodo = periodos.filter(pk=request.GET.get("periodo")).first()
+    else:  # por defecto, el periodo más reciente que ya tiene evaluaciones cerradas
+        periodo = periodos.filter(concertaciones__evaluacion__fecha_cierre__isnull=False).distinct().first() or periodos.first()
     if periodo is None:
         return render(request, "desempeno/resultados.html", {"periodos": periodos})
     notas = {
