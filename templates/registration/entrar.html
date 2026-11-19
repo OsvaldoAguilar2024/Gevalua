@@ -1,8 +1,10 @@
 {% extends "base.html" %}
+{% load static %}
 {% block clase_body %}simple{% endblock %}
 {% block contenido %}
 <section class="tarjeta angosta">
-  <h1>Entrar</h1>
+  <div class="logo-app"><img src="{% static 'img/logo-gevalua.png' %}" alt="gevalua" width="640" height="495"></div>
+  <h1>Entrar{% if empresa %} a {{ empresa.nombre }}{% endif %}</h1>
   <form method="post" novalidate>
     {% csrf_token %}
     {% if form.non_field_errors %}<p class="error">Correo o contraseña incorrectos.</p>{% endif %}
