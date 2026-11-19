@@ -27,6 +27,17 @@ def enviar_correo_activacion(empresa, usuario):
     )
 
 
+def crear_usuario_y_activar(empresa, email, nombre="", enviar_correo=True, **campos):
+    """Crea un usuario en el esquema de la empresa con clave aleatoria y le envía el enlace de activación."""
+    with tenant_context(empresa):
+        usuario = Usuario(email=email.strip().lower(), nombre=nombre, **campos)
+        usuario.set_password(secrets.token_urlsafe(32))
+        usuario.save()
+        if enviar_correo:
+            enviar_correo_activacion(empresa, usuario)
+    return usuario
+
+
 def crear_administrador(empresa, email, nombre="", enviar_correo=True):
     """Crea (o promueve) el primer administrador de una empresa en su esquema."""
     with tenant_context(empresa):

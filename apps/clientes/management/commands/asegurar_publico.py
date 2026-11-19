@@ -1,7 +1,11 @@
+import os
+
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from apps.clientes.models import Dominio, Empresa
+from apps.cuentas.models import Usuario
+from apps.cuentas.servicios import crear_usuario_y_activar
 
 
 class Command(BaseCommand):
@@ -20,4 +24,9 @@ class Command(BaseCommand):
             )
             if nuevo:
                 self.stdout.write(f"Dominio público registrado: {dominio}")
+        # Primer operador de la plataforma: se crea una sola vez y recibe su enlace por correo.
+        email = os.environ.get("OPERADOR_EMAIL", "").strip().lower()
+        if email and not Usuario.objects.filter(email=email).exists():
+            crear_usuario_y_activar(publico, email, is_staff=True, is_superuser=True)
+            self.stdout.write(f"Operador creado: se envió el enlace de activación a {email}")
         self.stdout.write(self.style.SUCCESS("Espacio común listo."))
