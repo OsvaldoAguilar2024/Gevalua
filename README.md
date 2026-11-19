@@ -63,7 +63,7 @@ También por consola: `python manage.py crear_empresa --help`.
 
 ## Despliegue en Railway
 
-El servicio se construye con el `Dockerfile`. Antes de cada despliegue corre `migrate_schemas` (todas las empresas) y `asegurar_publico`. El chequeo de salud es `/salud/`.
+El servicio se construye con el `Dockerfile` (en Railway, la configuración del servicio fija Dockerfile, pre-deploy `sh bin/predeploy.sh` y chequeo `/salud/`; `railway.json` queda como referencia). Antes de cada despliegue corre `migrate_schemas` (todas las empresas) y `asegurar_publico`. El chequeo de salud es `/salud/`.
 
 Variables del servicio web:
 
