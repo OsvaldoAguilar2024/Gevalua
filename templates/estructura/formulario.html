@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<p><a href="{{ volver }}">← Volver</a></p>
+<section class="tarjeta formulario">
+  <h1>{{ titulo }}</h1>
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% for e in form.non_field_errors %}<p class="error">{{ e }}</p>{% endfor %}
+    {% for campo in form %}
+      {% if campo.field.widget.input_type == "checkbox" %}
+        <label class="casilla">{{ campo }} {{ campo.label }}</label>
+      {% else %}
+        <label for="{{ campo.id_for_label }}">{{ campo.label }}</label>
+        {{ campo }}
+      {% endif %}
+      {% if campo.help_text %}<p class="ayuda">{{ campo.help_text }}</p>{% endif %}
+      {% for e in campo.errors %}<p class="error">{{ e }}</p>{% endfor %}
+    {% endfor %}
+    <button class="boton">Guardar</button>
+  </form>
+  {% block despues_formulario %}{% endblock %}
+</section>
+{% endblock %}

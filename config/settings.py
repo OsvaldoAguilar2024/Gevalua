@@ -70,6 +70,7 @@ TENANT_APPS = [
     "django.contrib.messages",
     "apps.cuentas",
     "apps.nucleo",
+    "apps.estructura",
 ]
 
 INSTALLED_APPS = list(SHARED_APPS) + [a for a in TENANT_APPS if a not in SHARED_APPS]

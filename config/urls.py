@@ -10,4 +10,5 @@ urlpatterns = [
     path("manifest.webmanifest", views.manifest, name="manifest"),
     path("sw.js", views.service_worker, name="service_worker"),
     path("cuenta/", include("apps.cuentas.urls")),
+    path("estructura/", include("apps.estructura.urls")),
 ]

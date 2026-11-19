@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>Empresa y estructura</h1>
+<nav class="pestanas">
+  <a href="{% url 'estructura' %}">Áreas y cargos</a>
+  <a class="activa" href="{% url 'empleados' %}">Personas</a>
+  <a href="{% url 'organigrama' %}">Organigrama</a>
+</nav>
+<form class="filtros" method="get">
+  <input type="text" name="q" value="{{ q }}" placeholder="Buscar por nombre, correo o documento">
+  <select name="area"><option value="">Todas las áreas</option>{% for a in areas %}<option value="{{ a.pk }}" {% if area == a.pk|stringformat:"s" %}selected{% endif %}>{{ a }}</option>{% endfor %}</select>
+  <select name="estado"><option value="">Todos</option>{% for v, n in estados %}<option value="{{ v }}" {% if estado == v %}selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+  <button class="boton chico">Filtrar</button>
+  <a class="boton chico" href="{% url 'crear_empleado' %}">+ Persona</a>
+</form>
+<div class="tabla-envoltura">
+<table class="tabla">
+  <thead><tr><th>Nombre</th><th>Cargo</th><th>Jefe</th><th>Roles</th><th>Ingreso</th><th>Fin prueba</th></tr></thead>
+  <tbody>
+  {% for e in empleados %}
+    <tr>
+      <td><a href="{% url 'editar_empleado' e.pk %}">{{ e.usuario }}</a><br><span class="tenue">{{ e.usuario.email }}</span></td>
+      <td>{{ e.cargo.nombre|default:"—" }}<br><span class="tenue">{{ e.cargo.area.nombre|default:"" }}</span></td>
+      <td>{{ e.jefe|default:"—" }}</td>
+      <td>{{ e.usuario.roles|join:", " }}</td>
+      <td>{{ e.fecha_ingreso|date:"d/m/Y"|default:"—" }}</td>
+      <td>{{ e.fin_periodo_prueba|date:"d/m/Y"|default:"—" }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="6" class="tenue">No hay personas con estos filtros.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

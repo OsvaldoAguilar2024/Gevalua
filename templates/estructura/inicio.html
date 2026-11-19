@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>Empresa y estructura</h1>
+<nav class="pestanas">
+  <a class="activa" href="{% url 'estructura' %}">Áreas y cargos</a>
+  <a href="{% url 'empleados' %}">Personas</a>
+  <a href="{% url 'organigrama' %}">Organigrama</a>
+</nav>
+<div class="rejilla">
+  <section class="tarjeta">
+    <div class="encabezado"><h2>Áreas</h2><a class="boton chico" href="{% url 'crear_area' %}">+ Área</a></div>
+    {% if areas %}
+    <ul class="lista">
+      {% for a in areas %}<li><a href="{% url 'editar_area' a.pk %}">{{ a }}</a> <span class="tenue">{{ a.n_cargos }} cargo{{ a.n_cargos|pluralize }}{% if not a.activa %} · inactiva{% endif %}</span></li>{% endfor %}
+    </ul>
+    {% else %}<p class="tenue">Empieza creando las áreas: gerencia, comercial, administrativa, operación…</p>{% endif %}
+  </section>
+  <section class="tarjeta">
+    <div class="encabezado"><h2>Cargos</h2>{% if areas %}<a class="boton chico" href="{% url 'crear_cargo' %}">+ Cargo</a>{% endif %}</div>
+    {% if cargos %}
+    <ul class="lista">
+      {% for c in cargos %}<li><a href="{% url 'editar_cargo' c.pk %}">{{ c.nombre }}</a> <span class="tenue">{{ c.area.nombre }} · {{ c.n_empleados }} persona{{ c.n_empleados|pluralize }}{% if not c.activo %} · inactivo{% endif %}</span></li>{% endfor %}
+    </ul>
+    {% else %}<p class="tenue">Cada cargo lleva sus funciones y competencias; de ahí salen las metas.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

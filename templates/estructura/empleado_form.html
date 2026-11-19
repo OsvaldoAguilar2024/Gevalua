@@ -1,0 +1,8 @@
+{% extends "estructura/formulario.html" %}
+{% block despues_formulario %}
+{% if object %}
+<form method="post" action="{% url 'reenviar_activacion' object.pk %}">{% csrf_token %}
+  <button class="boton secundario">Reenviar enlace para crear contraseña</button>
+</form>
+{% endif %}
+{% endblock %}

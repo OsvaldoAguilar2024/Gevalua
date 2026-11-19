@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>{% if user.es_admin_empresa %}Organigrama{% else %}Mi equipo{% endif %}</h1>
+{% if user.es_admin_empresa %}
+<nav class="pestanas">
+  <a href="{% url 'estructura' %}">Áreas y cargos</a>
+  <a href="{% url 'empleados' %}">Personas</a>
+  <a class="activa" href="{% url 'organigrama' %}">Organigrama</a>
+</nav>
+{% endif %}
+<section class="tarjeta">
+{% if filas %}
+  <ul class="organigrama">
+  {% for f in filas %}
+    <li style="--nivel: {{ f.nivel }}">
+      <strong>{{ f.empleado }}</strong>
+      <span class="tenue">{{ f.empleado.cargo.nombre|default:"Sin cargo" }}{% if f.n_equipo %} · {{ f.n_equipo }} a cargo{% endif %}</span>
+    </li>
+  {% endfor %}
+  </ul>
+{% else %}
+  <p class="tenue">Todavía no hay personas registradas{% if not user.es_admin_empresa %} en tu equipo{% endif %}.</p>
+{% endif %}
+</section>
+{% endblock %}
