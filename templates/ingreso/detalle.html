@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<p><a href="{% url 'ingresos' %}">← Procesos de ingreso</a></p>
+<div class="encabezado">
+  <div>
+    <h1>{{ proceso.candidato_nombre }}</h1>
+    <p class="tenue">{{ proceso.cargo }} · Documento <strong class="copiable" id="documento">{{ proceso.candidato_documento }}</strong>
+      <button type="button" class="enlace" onclick="navigator.clipboard.writeText('{{ proceso.candidato_documento|escapejs }}'); this.textContent='Copiado'">Copiar</button></p>
+  </div>
+  <span class="estado estado-{{ proceso.estado }}">{{ proceso.get_estado_display }}</span>
+</div>
+
+<ol class="etapas">
+  {% for e in etapas %}<li class="{% if e.actual %}actual{% elif e.completa %}completa{% endif %}">{{ e.nombre }}</li>{% endfor %}
+</ol>
+
+{% for e in etapas %}
+<section class="tarjeta {% if not e.actual %}plegada{% endif %}">
+  <h2>{{ e.nombre }}{% if e.completa %} <span class="tenue">· completa</span>{% endif %}</h2>
+  <ul class="requisitos">
+  {% for r in e.requisitos %}
+    <li id="req-{{ r.pk }}" class="requisito req-{{ r.estado }}{% if r.vencido %} req-vencido{% endif %}">
+      <div class="encabezado">
+        <div>
+          <strong>{{ r.nombre }}</strong>{% if not r.obligatorio %} <span class="tenue">(opcional)</span>{% endif %}
+          <br><span class="tenue">{{ r.get_estado_display }}{% if r.vence %} · vence {{ r.vence|date:"d/m/Y" }}{% endif %}{% if r.vencido %} · <strong class="error">vencido</strong>{% endif %}{% if r.verificado_por %} · {{ r.verificado_por }} {{ r.verificado_en|date:"d/m/Y" }}{% endif %}</span>
+          {% if r.observacion %}<br><span class="tenue">Nota: {{ r.observacion }}</span>{% endif %}
+          {% if r.archivo %}<br><a href="{% url 'descargar_requisito' r.pk %}" target="_blank" rel="noopener">Ver {{ r.nombre_archivo|default:"documento" }}</a>{% endif %}
+        </div>
+      </div>
+      {% if proceso.estado != "descartado" %}
+      {% if r.es_antecedente %}
+        {% if proceso.autorizacion_verificada %}
+          <p class="ayuda">Consulta asistida: abre la página oficial, pega el documento, resuelve el captcha, descarga el certificado y súbelo aquí.</p>
+          {% if r.fuente_url %}<a class="boton chico secundario" href="{{ r.fuente_url }}" target="_blank" rel="noopener">Abrir página oficial</a>{% endif %}
+        {% else %}
+          <p class="ayuda">Se habilita cuando la autorización de tratamiento de datos esté verificada.</p>
+        {% endif %}
+      {% endif %}
+      {% if not r.es_antecedente or proceso.autorizacion_verificada %}
+      <details {% if r.estado == "pendiente" and e.actual %}open{% endif %}>
+        <summary>{% if r.archivo or r.observacion %}Reemplazar{% else %}Cargar{% endif %}</summary>
+        <form method="post" enctype="multipart/form-data" action="{% url 'cargar_requisito' r.pk %}" class="carga">
+          {% csrf_token %}
+          <input type="file" name="archivo" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.doc,.docx,.xls,.xlsx" capture="environment">
+          {% if r.vigencia_dias %}<label>Fecha del documento</label><input type="date" name="fecha_documento" value="{{ r.fecha_documento|date:'Y-m-d' }}">{% endif %}
+          <label>Nota (opcional)</label><textarea name="observacion" rows="2">{{ r.observacion }}</textarea>
+          <button class="boton chico">Guardar</button>
+        </form>
+      </details>
+      {% endif %}
+      {% if r.estado == "cargado" %}
+      <div class="acciones">
+        <form method="post" action="{% url 'verificar_requisito' r.pk 'verificar' %}">{% csrf_token %}<button class="boton chico">Verificar</button></form>
+        <form method="post" action="{% url 'verificar_requisito' r.pk 'rechazar' %}" class="rechazo">{% csrf_token %}<input type="text" name="motivo" placeholder="Motivo del rechazo"><button class="boton chico secundario">Rechazar</button></form>
+      </div>
+      {% endif %}
+      {% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+  {% if e.actual and proceso.estado == "en_curso" %}
+    {% if e.valor == "contrato" %}
+      <div id="contratar" class="contratar">
+        <h3>Registrar contratación</h3>
+        {% if proceso.faltantes %}<p class="ayuda">Se habilita cuando todos los requisitos obligatorios del contrato estén verificados.</p>{% else %}
+        <form method="post" action="{% url 'contratar' proceso.pk %}">{% csrf_token %}
+          {% for campo in form_contratar %}<label for="{{ campo.id_for_label }}">{{ campo.label }}</label>{{ campo }}{% if campo.help_text %}<p class="ayuda">{{ campo.help_text }}</p>{% endif %}{% endfor %}
+          <button class="boton">Contratar y crear su cuenta</button>
+        </form>{% endif %}
+      </div>
+    {% elif proceso.siguiente_etapa %}
+      <form method="post" action="{% url 'avanzar_proceso' proceso.pk %}">{% csrf_token %}
+        <button class="boton" {% if not proceso.puede_avanzar %}disabled title="Faltan requisitos obligatorios"{% endif %}>Pasar a la siguiente etapa</button>
+      </form>
+    {% endif %}
+  {% endif %}
+</section>
+{% endfor %}
+
+{% if proceso.empleado %}<p>Empleado: <a href="{% url 'editar_empleado' proceso.empleado.pk %}">{{ proceso.empleado }}</a></p>{% endif %}
+{% if proceso.estado == "en_curso" %}
+<form method="post" action="{% url 'descartar_proceso' proceso.pk %}">{% csrf_token %}<button class="enlace">Descartar este proceso</button></form>
+{% endif %}
+{% endblock %}

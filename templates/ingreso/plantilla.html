@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>Ingreso y contratación</h1>
+<nav class="pestanas">
+  <a href="{% url 'ingresos' %}">Procesos</a>
+  <a href="{% url 'alertas' %}">Alertas</a>
+  <a class="activa" href="{% url 'plantilla_requisitos' %}">Lista de requisitos</a>
+</nav>
+<p class="ayuda">Esta lista se copia a cada proceso de ingreso nuevo. Los procesos que ya existen no cambian.</p>
+<form method="post">{% csrf_token %}
+  {{ formset.management_form }}
+  <div class="tabla-envoltura">
+  <table class="tabla">
+    <thead><tr><th>Orden</th><th>Etapa</th><th>Tipo</th><th>Nombre</th><th>Obligatorio</th><th>Vigencia (días)</th><th>Página de consulta</th><th>Quitar</th></tr></thead>
+    <tbody>
+    {% for f in formset %}
+      <tr>{% for h in f.hidden_fields %}{{ h }}{% endfor %}
+        <td>{{ f.orden }}</td><td>{{ f.etapa }}</td><td>{{ f.tipo }}</td><td>{{ f.nombre }}{{ f.nombre.errors }}</td>
+        <td>{{ f.obligatorio }}</td><td>{{ f.vigencia_dias }}</td><td>{{ f.fuente_url }}</td><td>{% if f.instance.pk %}{{ f.DELETE }}{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <button class="boton">Guardar lista</button>
+</form>
+{% endblock %}

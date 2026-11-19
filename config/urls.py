@@ -11,4 +11,5 @@ urlpatterns = [
     path("sw.js", views.service_worker, name="service_worker"),
     path("cuenta/", include("apps.cuentas.urls")),
     path("estructura/", include("apps.estructura.urls")),
+    path("ingreso/", include("apps.ingreso.urls")),
 ]

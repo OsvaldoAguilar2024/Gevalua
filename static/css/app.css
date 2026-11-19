@@ -110,3 +110,30 @@ label.casilla input { width: 20px; height: 20px; }
 .enlace-tarjeta { display: block; text-decoration: none; color: var(--texto); }
 .enlace-tarjeta:hover { border-color: var(--azul); }
 .enlace-tarjeta h2 { color: var(--azul); }
+
+/* Ingreso */
+.barra-avance { height: 6px; background: var(--azul-claro); border-radius: 999px; overflow: hidden; width: 100px; }
+.barra-avance span { display: block; height: 100%; background: var(--azul); }
+.etapas { display: flex; gap: 6px; list-style: none; padding: 0; margin: 0 0 16px; overflow-x: auto; counter-reset: etapa; }
+.etapas li { flex: 1; min-width: 90px; text-align: center; padding: 8px; border-radius: 8px; background: var(--blanco); border: 1px solid var(--borde); font-size: 0.9rem; color: var(--tenue); }
+.etapas li.actual { border-color: var(--azul); color: var(--azul); font-weight: 600; }
+.etapas li.completa { color: var(--verde); }
+.tarjeta.plegada { opacity: 0.85; }
+.requisitos { list-style: none; padding: 0; margin: 0; }
+.requisito { padding: 12px 0 12px 12px; border-bottom: 1px solid var(--borde); border-left: 4px solid var(--borde); margin-bottom: 4px; }
+.req-cargado { border-left-color: #c48a00; }
+.req-verificado { border-left-color: var(--verde); }
+.req-rechazado, .req-vencido { border-left-color: var(--rojo); }
+.requisito details { margin-top: 8px; }
+.requisito summary { cursor: pointer; color: var(--azul); }
+.carga input[type=file] { margin-top: 8px; max-width: 100%; }
+.acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
+.acciones form { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
+.rechazo { flex: 1 1 100%; }
+.rechazo input { flex: 1 1 160px; }
+.rechazo input { width: auto; padding: 8px; }
+.estado { font-size: 0.85rem; padding: 4px 10px; border-radius: 999px; background: var(--azul-claro); white-space: nowrap; }
+.estado-contratado { color: var(--verde); }
+.estado-descartado { color: var(--rojo); }
+.boton[disabled] { opacity: 0.5; cursor: not-allowed; }
+.contratar { margin-top: 16px; border-top: 1px solid var(--borde); padding-top: 8px; }

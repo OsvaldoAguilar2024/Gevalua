@@ -5,7 +5,7 @@
 <div class="rejilla">
   {% if user.es_admin_empresa %}
   <a class="tarjeta enlace-tarjeta" href="{% url 'estructura' %}"><h2>Empresa y estructura</h2><p>Áreas, cargos, organigrama y personas.</p></a>
-  <section class="tarjeta"><h2>Ingresos</h2><p>Expediente digital y lista de chequeo por etapa.</p><span class="pronto">Fase 1</span></section>
+  <a class="tarjeta enlace-tarjeta" href="{% url 'ingresos' %}"><h2>Ingreso y contratación</h2><p>Expediente digital, lista de chequeo por etapa, antecedentes y alertas.</p></a>
   <section class="tarjeta"><h2>Plantillas y periodos</h2><p>Plantillas de evaluación por periodicidad.</p><span class="pronto">Fase 1</span></section>
   {% endif %}
   {% if user.es_jefe or user.es_admin_empresa %}

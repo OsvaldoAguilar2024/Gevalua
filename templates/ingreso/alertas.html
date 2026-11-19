@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>Ingreso y contratación</h1>
+<nav class="pestanas">
+  <a href="{% url 'ingresos' %}">Procesos</a>
+  <a class="activa" href="{% url 'alertas' %}">Alertas</a>
+  <a href="{% url 'plantilla_requisitos' %}">Lista de requisitos</a>
+</nav>
+<p class="ayuda">Próximos {{ dias }} días.</p>
+<div class="rejilla">
+  <section class="tarjeta"><h2>Fin del periodo de prueba</h2>
+    <ul class="lista">{% for e in prueba %}<li><a href="{% url 'editar_empleado' e.pk %}">{{ e }}</a> <span class="tenue">{{ e.cargo.nombre }} · {{ e.fin_periodo_prueba|date:"d/m/Y" }} ({{ e.fin_periodo_prueba|timeuntil:hoy }})</span></li>{% empty %}<li class="tenue">Nada por ahora.</li>{% endfor %}</ul>
+  </section>
+  <section class="tarjeta"><h2>Fin de contrato</h2>
+    <ul class="lista">{% for e in contratos %}<li><a href="{% url 'editar_empleado' e.pk %}">{{ e }}</a> <span class="tenue">{{ e.get_tipo_contrato_display }} · {{ e.fin_contrato|date:"d/m/Y" }}</span></li>{% empty %}<li class="tenue">Nada por ahora.</li>{% endfor %}</ul>
+  </section>
+  <section class="tarjeta"><h2>Documentos de ingreso por vencer</h2>
+    <ul class="lista">{% for r in documentos %}<li><a href="{% url 'proceso' r.proceso_id %}#req-{{ r.pk }}">{{ r.nombre }}</a> <span class="tenue">{{ r.proceso.candidato_nombre }} · {{ r.vence|date:"d/m/Y" }}{% if r.vencido %} · vencido{% endif %}</span></li>{% empty %}<li class="tenue">Nada por ahora.</li>{% endfor %}</ul>
+  </section>
+</div>
+{% endblock %}

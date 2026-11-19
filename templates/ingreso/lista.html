@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>Ingreso y contratación</h1>
+<nav class="pestanas">
+  <a class="activa" href="{% url 'ingresos' %}">Procesos</a>
+  <a href="{% url 'alertas' %}">Alertas</a>
+  <a href="{% url 'plantilla_requisitos' %}">Lista de requisitos</a>
+</nav>
+<form class="filtros" method="get">
+  <select name="estado"><option value="">Todos</option>{% for v, n in estados %}<option value="{{ v }}" {% if estado == v %}selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+  <button class="boton chico">Filtrar</button>
+  <a class="boton chico" href="{% url 'crear_proceso' %}">+ Proceso de ingreso</a>
+</form>
+<div class="tabla-envoltura">
+<table class="tabla">
+  <thead><tr><th>Candidato</th><th>Cargo</th><th>Etapa</th><th>Avance</th><th>Estado</th></tr></thead>
+  <tbody>
+  {% for p in procesos %}
+    <tr>
+      <td><a href="{% url 'proceso' p.pk %}">{{ p.candidato_nombre }}</a><br><span class="tenue">{{ p.candidato_documento }}</span></td>
+      <td>{{ p.cargo.nombre }}<br><span class="tenue">{{ p.cargo.area.nombre }}</span></td>
+      <td>{{ p.get_etapa_display }}</td>
+      <td><div class="barra-avance"><span style="width: {{ p.avance }}%"></span></div><span class="tenue">{{ p.avance }} %</span></td>
+      <td>{{ p.get_estado_display }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="5" class="tenue">No hay procesos{% if estado %} en este estado{% endif %}.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}
