@@ -8,6 +8,10 @@
   <a href="{% url 'organigrama' %}">Organigrama</a>
   <a href="{% url 'consultores' %}">Consultores</a>
 </nav>
+{% for u in sin_ficha %}
+<p class="aviso aviso-info">{{ u }} ({{ u.email }}) entra como {{ u.roles|join:", "|lower }}, pero todavía no tiene ficha: sin ella no aparece en el organigrama ni se puede elegir como jefe.
+  <a href="{% url 'crear_empleado' %}?email={{ u.email|urlencode }}&amp;nombre={{ u.nombre|urlencode }}">Completar su ficha</a></p>
+{% endfor %}
 <form class="filtros" method="get">
   <input type="text" name="q" value="{{ q }}" placeholder="Buscar por nombre, correo o documento">
   <select name="area"><option value="">Todas las áreas</option>{% for a in areas %}<option value="{{ a.pk }}" {% if area == a.pk|stringformat:"s" %}selected{% endif %}>{{ a }}</option>{% endfor %}</select>

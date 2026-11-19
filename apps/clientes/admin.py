@@ -16,7 +16,8 @@ validar_subdominio = RegexValidator(
 class FormularioEmpresa(forms.ModelForm):
     subdominio = forms.CharField(
         validators=[validar_subdominio],
-        help_text=f"La empresa entrará por <subdominio>.{settings.BASE_DOMAIN}. También es el nombre de su esquema.",
+        help_text=f"Por ejemplo, con «piloto» la empresa entra por piloto.{settings.BASE_DOMAIN}. "
+        "Es también el nombre de su esquema y no se puede cambiar después.",
     )
     admin_email = forms.EmailField(label="Correo del primer administrador")
     admin_nombre = forms.CharField(label="Nombre del primer administrador", required=False)

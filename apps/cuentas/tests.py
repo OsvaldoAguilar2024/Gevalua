@@ -124,3 +124,67 @@ class AutorizacionDatosTests(TenantTestCase):
     def test_no_redirige_afuera(self):
         r = self.c.post("/cuenta/datos-personales/", {"acepto": "si", "next": "https://malo.example/"})
         self.assertRedirects(r, "/", fetch_redirect_response=False)
+
+
+class OperadoresTests(TenantTestCase):
+    """Cuentas de operador en el panel /operador/: el operador nuevo recibe el enlace y queda con permisos de empresas y cursos."""
+
+    @classmethod
+    def setup_tenant(cls, tenant):
+        tenant.nombre = "Empresa de prueba"
+        tenant.nit = "900123456-2"
+
+    def setUp(self):
+        ajuste = override_settings(EMAIL_BACKEND=CORREO)
+        ajuste.enable()
+        self.addCleanup(ajuste.disable)
+
+    def peticion(self, usuario, esquema="public"):
+        from django.contrib.messages.storage.fallback import FallbackStorage
+        from django.test import RequestFactory
+
+        r = RequestFactory().post("/operador/", HTTP_HOST="gevalua.oatech.com.co")
+        r.user, r.tenant, r.session = usuario, SimpleNamespace(schema_name=esquema, es_publica=esquema == "public"), {}
+        r._messages = FallbackStorage(r)
+        return r
+
+    def test_crear_operador_envia_enlace_y_da_permisos(self):
+        from django.contrib import admin as admin_django
+
+        from .admin import OperadorAdmin, FormularioOperador
+        from .models import Operador
+
+        jefe = Usuario.objects.create_superuser("osvaldo@oatech.com.co", "clave-segura-123")
+        ma = OperadorAdmin(Operador, admin_django.site)
+        req = self.peticion(jefe)
+        self.assertTrue(ma.has_add_permission(req))
+        self.assertFalse(ma.has_add_permission(self.peticion(jefe, "demo")))  # solo en el panel común
+        form = FormularioOperador({"email": "Gio@Consultoria.co", "nombre": "Gio", "is_active": "on"})
+        self.assertTrue(form.is_valid(), form.errors)
+        obj = form.save(commit=False)
+        ma.save_model(req, obj, form, change=False)
+        gio = Usuario.objects.get(email="gio@consultoria.co")
+        self.assertTrue(gio.is_staff)
+        self.assertFalse(gio.is_superuser)
+        self.assertTrue(gio.has_perm("clientes.add_empresa"))
+        self.assertTrue(gio.has_perm("cursos.change_curso"))
+        self.assertFalse(gio.has_perm("clientes.delete_empresa"))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("operador", mail.outbox[0].body)
+        self.assertIn("gevalua.oatech.com.co/cuenta/clave/", mail.outbox[0].body)
+        self.assertFalse(ma.has_add_permission(self.peticion(gio)))  # solo un superusuario administra operadores
+
+    def test_no_se_quita_su_propio_acceso(self):
+        from django.contrib import admin as admin_django
+
+        from .admin import OperadorAdmin, FormularioOperador
+        from .models import Operador
+
+        jefe = Usuario.objects.create_superuser("osvaldo@oatech.com.co", "clave-segura-123")
+        ma = OperadorAdmin(Operador, admin_django.site)
+        yo = Operador.objects.get(pk=jefe.pk)
+        form = FormularioOperador({"email": yo.email, "nombre": "", "is_active": ""}, instance=yo)
+        self.assertTrue(form.is_valid(), form.errors)
+        ma.save_model(self.peticion(jefe), form.save(commit=False), form, change=True)
+        jefe.refresh_from_db()
+        self.assertTrue(jefe.is_active and jefe.is_superuser)

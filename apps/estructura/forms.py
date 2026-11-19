@@ -45,8 +45,10 @@ class FormularioEmpleado(forms.ModelForm):
 
     campos_usuario = ["nombre", "email", "documento", "es_admin_empresa", "es_jefe", "es_consultor"]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, usuario_actual=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.usuario_actual = usuario_actual
+        self.usuario_existente = None  # usuario que ya entraba pero no tenía ficha (p. ej. el primer administrador)
         orden = self.campos_usuario + list(self.Meta.fields)
         self.order_fields(orden)
         self.fields["cargo"].queryset = Cargo.objects.filter(activo=True).select_related("area")
@@ -62,15 +64,29 @@ class FormularioEmpleado(forms.ModelForm):
         otros = Usuario.objects.filter(email=email)
         if self.instance.pk:
             otros = otros.exclude(pk=self.instance.usuario_id)
-        if otros.exists():
-            raise forms.ValidationError("Ya hay una persona con ese correo.")
+        otro = otros.first()
+        if otro is not None:
+            if self.instance.pk or Empleado.objects.filter(usuario=otro).exists():
+                raise forms.ValidationError("Ya hay una persona con ese correo.")
+            # Ya entra a la plataforma pero no tiene ficha (el primer administrador o un consultor): se le crea la ficha.
+            self.usuario_existente = otro
         return email
+
+    def clean(self):
+        datos = super().clean()
+        usuario = self.instance.usuario if self.instance.pk else self.usuario_existente
+        if (usuario is not None and self.usuario_actual is not None and usuario.pk == self.usuario_actual.pk
+                and usuario.es_admin_empresa and not datos.get("es_admin_empresa")):
+            self.add_error("es_admin_empresa", "No puedes quitarte a ti mismo el rol de administrador.")
+        return datos
 
     @transaction.atomic
     def save(self, commit=True):
         empleado = super().save(commit=False)
         self.es_nuevo = empleado.pk is None
-        if self.es_nuevo:
+        if self.es_nuevo and self.usuario_existente is not None:
+            usuario = self.usuario_existente  # conserva su contraseña: ya puede entrar
+        elif self.es_nuevo:
             usuario = Usuario()
             usuario.set_password(secrets.token_urlsafe(32))  # la persona crea la suya con el enlace
         else:
