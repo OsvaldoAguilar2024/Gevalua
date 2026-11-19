@@ -260,3 +260,49 @@ class EvaluacionFlujoTests(EvidenciasTests):
         self.c.force_login(self.gerente.usuario)
         r = self.c.get(reverse("resultados"))
         self.assertContains(r, str(ev.nota_final).replace(".", ","))
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class ExcelTests(EvidenciasTests):
+    """Exportación a Excel donde hay PDF: evaluación, concertación, resultados y repositorio."""
+
+    def leer(self, r):
+        from io import BytesIO
+
+        from openpyxl import load_workbook
+
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r["Content-Type"].startswith("application/vnd.openxmlformats"))
+        self.assertIn(".xlsx", r["Content-Disposition"])
+        return load_workbook(BytesIO(r.content))
+
+    def test_excel_de_evaluacion_resultados_y_repositorio(self):
+        conc = self.concertada()
+        self.c.force_login(self.jefe.usuario)
+        metas = list(conc.metas.all())
+        datos = {"accion": "calificar", **{f"nota-{m.pk}": "4" for m in metas}}
+        self.c.post(reverse("evaluacion", args=[conc.pk]), datos)
+        self.firmar_como(self.jefe.usuario, conc, "evaluacion")
+        self.c.force_login(self.jefe.usuario)
+        wb = self.leer(self.c.get(reverse("excel_desempeno", args=["evaluacion", conc.pk])))
+        self.assertEqual(wb.sheetnames, ["Resumen", "Metas", "Acciones de mejora", "Firmas"])
+        textos = [c.value for fila in wb["Metas"].iter_rows() for c in fila]
+        self.assertIn(metas[0].descripcion, textos)
+        self.assertEqual(wb["Firmas"].max_row, 4)  # título, espacio, encabezado y la firma del jefe
+        wb = self.leer(self.c.get(reverse("excel_desempeno", args=["concertacion", conc.pk])))
+        self.assertIn("Metas", wb.sheetnames)
+        self.c.force_login(self.gerente.usuario)
+        wb = self.leer(self.c.get(reverse("resultados"), {"formato": "xlsx"}))
+        nombres = [c.value for c in wb["Por persona"]["A"]]
+        self.assertIn(self.emp.usuario.get_full_name(), nombres)
+        wb = self.leer(self.c.get(reverse("repositorio"), {"tipo": "evaluacion", "formato": "xlsx"}))
+        self.assertIn(self.emp.usuario.get_full_name(), [c.value for c in wb["Evaluaciones"]["A"]])
+
+    def test_empleado_ajeno_no_descarga_excel(self):
+        conc = self.concertada()
+        from apps.cuentas.models import Usuario
+
+        otro = Usuario.objects.create_user("otro@prueba.co", "clave-segura-123")
+        self.c.force_login(otro)
+        self.assertEqual(self.c.get(reverse("excel_desempeno", args=["evaluacion", conc.pk])).status_code, 404)
+        self.assertEqual(self.c.get(reverse("resultados"), {"formato": "xlsx"}).status_code, 404)

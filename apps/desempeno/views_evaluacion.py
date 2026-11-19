@@ -13,6 +13,7 @@ from apps.estructura.forms import FECHA
 from apps.estructura.models import Area, Empleado
 from apps.firmas.models import Firma
 from apps.firmas.servicios import firmas_de
+from apps.nucleo import excel
 from apps.nucleo.auditoria import registrar
 
 from . import catalogo
@@ -195,6 +196,41 @@ def pdf(request, tipo, pk):
     return respuesta
 
 
+def excel_documento(request, tipo, pk):
+    """Excel de la concertación o de la evaluación: metas, pesos, notas, acciones de mejora y firmas."""
+    c, ev = obtener(pk)
+    exigir_rol(c, request.user)
+    if tipo not in ("concertacion", "evaluacion"):
+        raise Http404
+    metas = list(c.metas.select_related("calificacion"))
+    if tipo == "evaluacion":
+        enc = ["Meta", "Tipo", "Indicador", "Objetivo", "Peso %", "Autoevaluación", "Nota del jefe", "Comentario del jefe", "Comentario del empleado"]
+        filas = []
+        for m in metas:
+            cal = getattr(m, "calificacion", None)
+            filas.append([m.descripcion, m.get_tipo_display(), m.indicador, m.valor_objetivo, m.peso,
+                          cal and cal.autoevaluacion, cal and cal.nota_jefe, cal and cal.comentario, cal and cal.comentario_empleado])
+        nota = ev.nota_final if ev.cerrada else ev.calcular()
+        resumen = [["Empleado", c.empleado.usuario.get_full_name()], ["Documento", c.empleado.usuario.documento],
+                   ["Cargo", c.empleado.cargo.nombre if c.empleado.cargo_id else ""], ["Jefe", c.jefe.usuario.get_full_name()],
+                   ["Periodo", c.periodo.nombre], ["Nota final", nota], ["Nivel", catalogo.nivel_de(nota) if nota is not None else ""],
+                   ["Estado", "Cerrada" if ev.cerrada else "Abierta"], ["Fortalezas", ev.fortalezas],
+                   ["Aspectos a mejorar", ev.aspectos_mejorar], ["Plan siguiente periodo", ev.plan_siguiente],
+                   ["Recomendación", ev.get_recomendacion_display() if ev.recomendacion else ""], ["Observaciones", ev.observaciones]]
+        hojas = [("Resumen", ["Campo", "Valor"], resumen), ("Metas", enc, filas),
+                 ("Acciones de mejora", ["Acción", "Meta", "Fecha compromiso"],
+                  [[a.descripcion, a.meta.descripcion if a.meta_id else "", a.fecha_compromiso] for a in ev.acciones.select_related("meta")])]
+    else:
+        hojas = [("Metas", ["Meta", "Tipo", "Indicador", "Objetivo", "Peso %", "Evidencia esperada"],
+                  [[m.descripcion, m.get_tipo_display(), m.indicador, m.valor_objetivo, m.peso, m.evidencia_requerida] for m in metas])]
+    hojas.append(("Firmas", ["Firmante", "Documento", "Correo", "Firma como", "Fecha", "IP", "Huella SHA-256"],
+                  [[f.firmante_nombre, f.firmante_documento, f.firmante_email, f.calidad, f.fecha, f.ip, f.huella_documento]
+                   for f in firmas_de(tipo, c.pk)]))
+    registrar(request, "exportar_excel", c, detalle=tipo)
+    titulo = f"{'Evaluación' if tipo == 'evaluacion' else 'Concertación'} · {c.periodo.nombre} · {c.empleado.usuario.get_full_name()}"
+    return excel.respuesta(f"{tipo}-{c.periodo.nombre}-{c.empleado.usuario.get_full_name()}", hojas, titulo)
+
+
 def resultados(request):
     """Resultados por persona, equipo y área. El resultado de un jefe combina el suyo con el de su equipo."""
     u = request.user
@@ -247,5 +283,14 @@ def resultados(request):
         if f["propia"] is not None and f["e"].cargo_id:
             por_area.setdefault(f["e"].cargo.area, []).append(f["propia"])
     areas = [{"area": a, "promedio": (sum(v) / len(v)).quantize(Decimal("0.01")), "n": len(v)} for a, v in sorted(por_area.items(), key=lambda x: x[0].nombre)]
+    if request.GET.get("formato") == "xlsx":
+        registrar(request, "exportar_excel", periodo, detalle="resultados")
+        personas = [[f["e"].usuario.get_full_name(), f["e"].usuario.documento, f["e"].cargo.nombre if f["e"].cargo_id else "",
+                     f["e"].cargo.area.nombre if f["e"].cargo_id else "", f["e"].jefe.usuario.get_full_name() if f["e"].jefe_id else "",
+                     f["equipo"], f["propia"], f["cascada"], f["nivel"]] for f in filas]
+        return excel.respuesta(f"resultados-{periodo.nombre}", [
+            ("Por persona", ["Persona", "Documento", "Cargo", "Área", "Jefe", "Personas a cargo", "Nota propia", "En cascada", "Nivel"], personas),
+            ("Por área", ["Área", "Promedio", "Evaluados"], [[a["area"].nombre, a["promedio"], a["n"]] for a in areas]),
+        ], f"Resultados · {periodo.nombre}")
     registrar(request, "consultar_resultados", periodo)
     return render(request, "desempeno/resultados.html", {"periodos": periodos, "periodo": periodo, "filas": filas, "areas": areas})

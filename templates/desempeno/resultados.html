@@ -6,6 +6,7 @@
 <form class="filtros" method="get">
   <select name="periodo">{% for p in periodos %}<option value="{{ p.pk }}" {% if p == periodo %}selected{% endif %}>{{ p.nombre }}</option>{% endfor %}</select>
   <button class="boton chico">Ver</button>
+  {% if periodo %}<button class="boton chico secundario" name="formato" value="xlsx">Exportar a Excel</button>{% endif %}
 </form>
 {% endif %}
 {% if periodo %}

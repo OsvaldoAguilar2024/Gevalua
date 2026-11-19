@@ -14,5 +14,6 @@ urlpatterns = [
     path("evidencia/<int:pk>/<str:decision>/", views_evidencias.revisar, name="revisar_evidencia"),
     path("evaluacion/<int:pk>/", views_evaluacion.evaluacion, name="evaluacion"),
     path("pdf/<str:tipo>/<int:pk>/", views_evaluacion.pdf, name="pdf_desempeno"),
+    path("excel/<str:tipo>/<int:pk>/", views_evaluacion.excel_documento, name="excel_desempeno"),
     path("resultados/", views_evaluacion.resultados, name="resultados"),
 ]

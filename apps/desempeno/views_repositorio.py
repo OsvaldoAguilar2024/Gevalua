@@ -6,10 +6,32 @@ from django.http import Http404
 from django.shortcuts import render
 
 from apps.estructura.models import Area, Empleado
+from apps.nucleo import excel
 from apps.nucleo.auditoria import registrar
 
 from .models import Evaluacion, Evidencia, Periodo
 from .permisos import empleado_de
+
+
+MAX_FILAS_EXCEL = 10000
+
+
+def exportar(request, tipo, qs, filtros):
+    registrar(request, "exportar_excel", entidad="repositorio", detalle=str({k: v for k, v in filtros.items() if v}))
+    if tipo == "evaluacion":
+        filas = [[ev.concertacion.empleado.usuario.get_full_name(), ev.concertacion.empleado.usuario.documento,
+                  ev.concertacion.empleado.cargo.area.nombre if ev.concertacion.empleado.cargo_id else "",
+                  ev.concertacion.periodo.nombre, ev.nota_final, ev.nivel, ev.fecha_cierre] for ev in qs]
+        return excel.respuesta("repositorio-evaluaciones", [
+            ("Evaluaciones", ["Persona", "Documento", "Área", "Periodo", "Nota", "Nivel", "Cerrada el"], filas)])
+    filas = []
+    for ev in qs:
+        c = ev.meta.concertacion
+        soporte = ev.nombre_archivo or ev.enlace or "Comentario"
+        filas.append([soporte, c.empleado.usuario.get_full_name(), c.empleado.cargo.area.nombre if c.empleado.cargo_id else "",
+                      ev.meta.descripcion, c.periodo.nombre, ev.get_estado_display(), ev.fecha, ev.comentario, ev.comentario_jefe])
+    return excel.respuesta("repositorio-evidencias", [
+        ("Evidencias", ["Soporte", "Persona", "Área", "Meta", "Periodo", "Estado", "Fecha", "Comentario", "Comentario del jefe"], filas)])
 
 
 def alcance(usuario):
@@ -48,6 +70,8 @@ def repositorio(request):
         qs = qs.filter(**{f"{campo}empleado__cargo__area_id": f["area"]})
     if f["periodo"]:
         qs = qs.filter(**{f"{campo}periodo_id": f["periodo"]})
+    if request.GET.get("formato") == "xlsx":
+        return exportar(request, tipo, qs.order_by("-pk")[:MAX_FILAS_EXCEL], f)
     pagina = Paginator(qs.order_by("-pk"), 30).get_page(request.GET.get("pagina"))
     empleados = Empleado.objects.select_related("usuario")
     if ids is not None:
