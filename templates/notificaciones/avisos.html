@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block clase_body %}simple{% endblock %}
+{% block contenido %}
+<h1>Avisos</h1>
+{% if vapid %}
+<section class="tarjeta" id="caja-push" hidden>
+  <p>Recibe los avisos en este celular aunque no tengas la app abierta.</p>
+  <button class="boton grande" id="activar-push" data-vapid="{{ vapid }}">Activar avisos</button>
+  <p class="ayuda">En iPhone primero instala la app: Compartir → «Agregar a inicio».</p>
+</section>
+{% endif %}
+<ul class="lista tarjeta">
+  {% for a in avisos %}<li>{% if a.url %}<a href="{{ a.url }}">{{ a.titulo }}</a>{% else %}<strong>{{ a.titulo }}</strong>{% endif %}<br><span class="tenue">{{ a.mensaje }} · {{ a.fecha|date:"d/m/Y H:i" }}</span></li>{% empty %}<li class="tenue">No tienes avisos.</li>{% endfor %}
+</ul>
+{% endblock %}

@@ -160,6 +160,10 @@ def manejador_evaluacion(request, pk):
             ev.save(update_fields=["nota_final", "nivel", "fecha_cierre"])
             c.estado = Concertacion.Estado.CERRADA
             c.save(update_fields=["estado"])
+            from apps.notificaciones.servicios import notificar
+
+            notificar(c.empleado.usuario, "Tu evaluación está lista", f"Tu jefe cerró tu evaluación de {c.periodo}. Revísala y fírmala.",
+                      f"/desempeno/evaluacion/{c.pk}/", f"evaluacion_cerrada:{c.pk}")
             return f"Evaluación cerrada: {ev.nota_final} · {ev.nivel}. {c.empleado.usuario.get_short_name()} la verá para firmar."
         return "Firmaste tu evaluación."
 

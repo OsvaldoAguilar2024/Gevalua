@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>Recordatorios</h1>
+<div class="rejilla">
+  <section class="tarjeta"><h2>Nuevo recordatorio</h2>
+    <form method="post">{% csrf_token %}
+      {% for e in form.non_field_errors %}<p class="error">{{ e }}</p>{% endfor %}
+      {% for campo in form %}
+        {% if campo.field.widget.input_type == "checkbox" %}<label class="casilla">{{ campo }} {{ campo.label|capfirst }}</label>
+        {% else %}<label for="{{ campo.id_for_label }}">{{ campo.label|capfirst }}</label>{{ campo }}{% endif %}
+        {% if campo.help_text %}<p class="ayuda">{{ campo.help_text }}</p>{% endif %}
+        {% for e in campo.errors %}<p class="error">{{ e }}</p>{% endfor %}
+      {% endfor %}
+      <button class="boton">Programar</button>
+    </form>
+  </section>
+  <section class="tarjeta"><h2>Programados</h2>
+    <ul class="lista">{% for r in recordatorios %}<li><strong>{{ r.mensaje }}</strong><br><span class="tenue">{{ r.get_destino_display }}{% if r.persona %}: {{ r.persona }}{% endif %}{% if r.area %}: {{ r.area }}{% endif %} · {{ r.get_repeticion_display }} · {% if r.activo %}próximo {{ r.proximo_envio|date:"d/m/Y H:i" }}{% else %}inactivo{% endif %}</span>
+      {% if r.activo %}<form method="post" action="{% url 'desactivar_recordatorio' r.pk %}">{% csrf_token %}<button class="enlace">Desactivar</button></form>{% endif %}</li>{% empty %}<li class="tenue">Aún no hay recordatorios. Ejemplo: «subir el reporte semanal el viernes».</li>{% endfor %}</ul>
+  </section>
+</div>
+{% endblock %}

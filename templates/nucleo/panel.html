@@ -12,6 +12,7 @@
   <a class="tarjeta enlace-tarjeta" href="{% url 'equipo' %}"><h2>Mi equipo</h2><p>Metas, evidencias por revisar y evaluaciones de tu equipo directo y en cascada.</p></a>
   {% endif %}
   <a class="tarjeta enlace-tarjeta" href="{% url 'resultados' %}"><h2>Resultados</h2><p>Por persona, equipo y área, con la cascada de jefes.</p></a>
-  <section class="tarjeta"><h2>Repositorio</h2><p>Soportes y evaluaciones por empleado, área, periodo y tipo.</p><span class="pronto">Fase 1</span></section>
+  <a class="tarjeta enlace-tarjeta" href="{% url 'repositorio' %}"><h2>Repositorio</h2><p>Soportes y evaluaciones por empleado, área, periodo y tipo.</p></a>
+  {% if user.es_jefe or user.es_admin_empresa %}<a class="tarjeta enlace-tarjeta" href="{% url 'recordatorios' %}"><h2>Recordatorios</h2><p>Programa avisos para tu equipo o una persona, una vez o repetidos.</p></a>{% endif %}
 </div>
 {% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>Repositorio de soportes</h1>
+<form class="filtros" method="get">
+  <select name="tipo"><option value="evidencia" {% if tipo == "evidencia" %}selected{% endif %}>Evidencias</option><option value="evaluacion" {% if tipo == "evaluacion" %}selected{% endif %}>Evaluaciones</option></select>
+  {% if empleados|length > 1 %}<select name="empleado"><option value="">Todas las personas</option>{% for e in empleados %}<option value="{{ e.pk }}" {% if f.empleado == e.pk|stringformat:"s" %}selected{% endif %}>{{ e }}</option>{% endfor %}</select>{% endif %}
+  <select name="area"><option value="">Todas las áreas</option>{% for a in areas %}<option value="{{ a.pk }}" {% if f.area == a.pk|stringformat:"s" %}selected{% endif %}>{{ a }}</option>{% endfor %}</select>
+  <select name="periodo"><option value="">Todos los periodos</option>{% for p in periodos %}<option value="{{ p.pk }}" {% if f.periodo == p.pk|stringformat:"s" %}selected{% endif %}>{{ p }}</option>{% endfor %}</select>
+  {% if tipo == "evidencia" %}<select name="estado"><option value="">Todos los estados</option>{% for v, n in estados %}<option value="{{ v }}" {% if f.estado == v %}selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+  <input type="text" name="q" value="{{ f.q }}" placeholder="Buscar texto">{% endif %}
+  <button class="boton chico">Buscar</button>
+</form>
+<div class="tabla-envoltura"><table class="tabla">
+{% if tipo == "evaluacion" %}
+  <thead><tr><th>Persona</th><th>Área</th><th>Periodo</th><th>Nota</th><th>Nivel</th><th></th></tr></thead>
+  <tbody>{% for ev in pagina %}<tr><td>{{ ev.concertacion.empleado }}</td><td>{{ ev.concertacion.empleado.cargo.area.nombre|default:"—" }}</td><td>{{ ev.concertacion.periodo }}</td><td>{{ ev.nota_final }}</td><td>{{ ev.nivel }}</td>
+    <td><a href="{% url 'evaluacion' ev.concertacion_id %}">Ver</a> · <a href="{% url 'pdf_desempeno' 'evaluacion' ev.concertacion_id %}" target="_blank">PDF</a></td></tr>{% empty %}<tr><td colspan="6" class="tenue">Sin resultados.</td></tr>{% endfor %}</tbody>
+{% else %}
+  <thead><tr><th>Soporte</th><th>Persona</th><th>Meta</th><th>Periodo</th><th>Estado</th></tr></thead>
+  <tbody>{% for ev in pagina %}<tr>
+    <td>{% if ev.archivo %}<a href="{% url 'descargar_evidencia' ev.pk %}" target="_blank" rel="noopener">{{ ev.nombre_archivo|default:"Archivo" }}</a>{% elif ev.enlace %}<a href="{{ ev.enlace }}" target="_blank" rel="noopener noreferrer">Enlace</a>{% else %}Comentario{% endif %}<br><span class="tenue">{{ ev.fecha|date:"d/m/Y" }}</span></td>
+    <td>{{ ev.meta.concertacion.empleado }}<br><span class="tenue">{{ ev.meta.concertacion.empleado.cargo.area.nombre|default:"" }}</span></td>
+    <td><a href="{% url 'concertacion' ev.meta.concertacion_id %}#meta-{{ ev.meta_id }}">{{ ev.meta.descripcion|truncatechars:60 }}</a></td>
+    <td>{{ ev.meta.concertacion.periodo }}</td><td>{{ ev.get_estado_display }}</td></tr>{% empty %}<tr><td colspan="5" class="tenue">Sin resultados.</td></tr>{% endfor %}</tbody>
+{% endif %}
+</table></div>
+{% if pagina.has_other_pages %}<p>{% if pagina.has_previous %}<a href="?{{ request.GET.urlencode }}&pagina={{ pagina.previous_page_number }}">← Anterior</a>{% endif %} Página {{ pagina.number }} de {{ pagina.paginator.num_pages }} {% if pagina.has_next %}<a href="?{{ request.GET.urlencode }}&pagina={{ pagina.next_page_number }}">Siguiente →</a>{% endif %}</p>{% endif %}
+{% endblock %}

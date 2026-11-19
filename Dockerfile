@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Librerías del sistema para WeasyPrint (PDF de concertaciones, evaluaciones y certificados)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core \
+        libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

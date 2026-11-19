@@ -6,6 +6,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 
+from apps.notificaciones.servicios import notificar
 from apps.nucleo.auditoria import registrar
 
 from .models import Concertacion, Evidencia, Meta
@@ -42,6 +43,8 @@ def subir(request, pk):
             ev.nombre_archivo = request.FILES["archivo"].name[:255]
         ev.save()
         registrar(request, "subir", ev, detalle=ev.nombre_archivo or ev.enlace)
+        notificar(c.jefe.usuario, "Nueva evidencia por revisar", f"{c.empleado.usuario.get_short_name()} subió una evidencia: {meta.descripcion[:80]}",
+                  f"/desempeno/concertacion/{c.pk}/#meta-{meta.pk}", f"evidencia_subida:{ev.pk}", correo=False)
         messages.success(request, "Evidencia enviada a tu jefe.")
     else:
         for errores in form.errors.values():
@@ -64,6 +67,9 @@ def revisar(request, pk, decision):
     ev.comentario_jefe, ev.revisada_por, ev.revisada_en = comentario, request.user, timezone.now()
     ev.save(update_fields=["estado", "comentario_jefe", "revisada_por", "revisada_en"])
     registrar(request, decision, ev)
+    if decision == "devolver":
+        notificar(c.empleado.usuario, "Evidencia devuelta", f"Tu jefe devolvió una evidencia de «{ev.meta.descripcion[:80]}»: {comentario}",
+                  f"/desempeno/concertacion/{c.pk}/#meta-{ev.meta_id}", f"evidencia_devuelta:{ev.pk}")
     return redirect(f"/desempeno/concertacion/{c.pk}/#meta-{ev.meta_id}")
 
 

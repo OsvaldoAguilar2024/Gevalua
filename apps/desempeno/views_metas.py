@@ -139,6 +139,10 @@ def al_firmar_concertacion(request, c, rol):
     if rol == "jefe":
         c.estado, c.aceptada_jefe = Concertacion.Estado.POR_ACEPTAR, ahora
         mensaje = f"Firmaste y enviaste las metas a {c.empleado}. Le llegará el aviso para aceptarlas."
+        from apps.notificaciones.servicios import notificar
+
+        notificar(c.empleado.usuario, "Tienes metas por aceptar", f"{c.jefe.usuario.get_short_name()} te envió tus metas de {c.periodo}. Revísalas y fírmalas.",
+                  f"/desempeno/concertacion/{c.pk}/", f"metas_enviadas:{c.pk}")
     else:
         c.estado, c.aceptada_empleado = Concertacion.Estado.ACEPTADA, ahora
         mensaje = "Firmaste tus metas. Ya puedes subir evidencias."

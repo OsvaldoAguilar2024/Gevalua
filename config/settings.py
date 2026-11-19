@@ -74,6 +74,7 @@ TENANT_APPS = [
     "apps.ingreso",
     "apps.firmas",
     "apps.desempeno",
+    "apps.notificaciones",
 ]
 
 INSTALLED_APPS = list(SHARED_APPS) + [a for a in TENANT_APPS if a not in SHARED_APPS]
@@ -194,6 +195,18 @@ if os.environ.get("RESEND_API_KEY"):
     ANYMAIL = {"RESEND_API_KEY": os.environ["RESEND_API_KEY"]}
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# --- Notificaciones push (Web Push con claves VAPID) ---
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+VAPID_SUB = os.environ.get("VAPID_SUB", f"mailto:soporte@{BASE_DOMAIN}")
+
+# --- Respaldos (bucket aparte de Railway durante el piloto) ---
+RESPALDO_BUCKET = os.environ.get("RESPALDO_BUCKET", "")
+RESPALDO_ACCESS_KEY_ID = os.environ.get("RESPALDO_ACCESS_KEY_ID", "")
+RESPALDO_SECRET_ACCESS_KEY = os.environ.get("RESPALDO_SECRET_ACCESS_KEY", "")
+RESPALDO_ENDPOINT = os.environ.get("RESPALDO_ENDPOINT", "")
+RESPALDO_CLAVE = os.environ.get("RESPALDO_CLAVE", "")  # clave Fernet para cifrar los volcados
 
 # --- Seguridad --------------------------------------------------------------
 if not DEBUG:

@@ -1,5 +1,5 @@
 // Service worker mínimo: permite instalar la PWA y muestra una página sin conexión.
-const CACHE = "gevalua-v1";
+const CACHE = "gevalua-v2";
 const OFFLINE = "/static/offline.html";
 
 self.addEventListener("install", (e) => {
@@ -18,4 +18,17 @@ self.addEventListener("fetch", (e) => {
   if (e.request.mode === "navigate") {
     e.respondWith(fetch(e.request).catch(() => caches.match(OFFLINE)));
   }
+});
+
+self.addEventListener("push", (e) => {
+  let datos = { titulo: "gevalua", mensaje: "", url: "/" };
+  try { datos = Object.assign(datos, e.data.json()); } catch (_) {}
+  e.waitUntil(self.registration.showNotification(datos.titulo, {
+    body: datos.mensaje, icon: "/static/img/icono-192.png", badge: "/static/img/icono-192.png", data: { url: datos.url },
+  }));
+});
+
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(clients.openWindow(e.notification.data && e.notification.data.url ? e.notification.data.url : "/"));
 });
