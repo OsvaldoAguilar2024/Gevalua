@@ -29,13 +29,13 @@ class Command(BaseCommand):
         parser.add_argument("--reiniciar", action="store_true", help="borra la Empresa Demo y la crea de nuevo")
 
     def handle(self, *args, **o):
-        clave = os.environ.get("DEMO_CLAVE", "")
-        if len(clave) < 10:
-            raise CommandError("Define DEMO_CLAVE (mínimo 10 caracteres) para crear los usuarios de demo.")
         existente = Empresa.objects.filter(schema_name=SUB).first()
         if existente and not o["reiniciar"]:
             self.stdout.write("La Empresa Demo ya existe; no se cambia nada.")
             return
+        clave = os.environ.get("DEMO_CLAVE", "")
+        if len(clave) < 10:
+            raise CommandError("Define DEMO_CLAVE (mínimo 10 caracteres) para crear los usuarios de demo.")
         if existente:
             existente.auto_drop_schema = True
             existente.delete(force_drop=True)

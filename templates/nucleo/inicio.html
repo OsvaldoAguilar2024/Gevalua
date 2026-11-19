@@ -1,19 +1,25 @@
 {% extends "base.html" %}
-{% block clase_body %}simple{% endblock %}
+{% load iconos %}
+{% block clase_body %}{% if user.puede_ver_vista_completa %}completa{% else %}simple{% endif %}{% endblock %}
 {% block contenido %}
-<h1>Hola, {{ user.get_short_name }}</h1>
-<p class="roles">{{ user.roles|join:" · " }}</p>
+<div {% if user.puede_ver_vista_completa %}style="max-width: 720px"{% endif %}>
+<section class="hola">
+  <h1>Hola, {{ user.get_short_name }}</h1>
+  <p>{% if pendientes %}Tienes {{ pendientes|length }} pendiente{{ pendientes|length|pluralize }}.{% else %}Estás al día.{% endif %} · {{ user.roles|join:" · " }}</p>
+</section>
 {% if pendientes %}
-  <ul class="pendientes">
-    {% for p in pendientes %}<li><a class="boton grande" href="{{ p.url }}">{{ p.texto }}</a></li>{% endfor %}
-  </ul>
+  {% for p in pendientes %}
+  <a class="pendiente" href="{{ p.url }}"><span class="indicador-icono ic-{{ p.color|default:'azul' }}">{% icono p.icono|default:"check" %}</span><span>{{ p.texto }}</span>{% icono "flecha" %}</a>
+  {% endfor %}
 {% else %}
   <section class="tarjeta vacia">
+    <span class="indicador-icono ic-verde" style="margin: 0 auto 12px">{% icono "check" %}</span>
     <p class="grande">No tienes nada pendiente.</p>
     <p>Aquí verás las metas por aceptar, las evidencias por subir y las firmas pendientes.</p>
   </section>
 {% endif %}
 {% if user.puede_ver_vista_completa %}
-  <p><a class="boton secundario" href="{% url 'panel' %}">Ir al panel de {% if user.es_admin_empresa %}la empresa{% else %}mi equipo{% endif %}</a></p>
+  <p><a class="boton secundario" href="{% url 'panel' %}">{% icono "panel" %} Ir al panel de {% if user.es_admin_empresa %}la empresa{% else %}mi equipo{% endif %}</a></p>
 {% endif %}
+</div>
 {% endblock %}

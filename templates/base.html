@@ -1,4 +1,4 @@
-{% load static %}<!doctype html>
+{% load static iconos %}<!doctype html>
 <html lang="es-CO">
 <head>
   <meta charset="utf-8">
@@ -9,34 +9,84 @@
   <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32.png' %}">
   <link rel="icon" type="image/png" sizes="192x192" href="{% static 'img/icono-192.png' %}">
   <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body class="{% block clase_body %}{% endblock %}">
-  <header class="barra">
-    <a class="marca" href="/">
-      {% if empresa and empresa.logo %}<img src="{{ empresa.logo.url }}" alt="" class="logo">{% else %}<img src="{% static 'img/simbolo.png' %}" alt="" class="simbolo">{% endif %}
-      <span>{% if empresa %}{{ empresa.nombre }}{% else %}gevalua{% endif %}</span>
+{% block cuerpo %}
+{% with p=request.path %}
+{% if user.is_authenticated and empresa and user.puede_ver_vista_completa %}
+<div class="app">
+  <aside class="lateral" id="lateral">
+    <a class="lateral-marca" href="/">
+      {% if empresa.logo %}<img src="{{ empresa.logo.url }}" alt="" class="logo">{% else %}<img src="{% static 'img/simbolo.png' %}" alt="" class="simbolo">{% endif %}
+      <span>{{ empresa.nombre }}</span>
     </a>
-    {% if user.is_authenticated and empresa %}
-    <nav class="menu">
-      {% if user.puede_ver_vista_completa %}
-        <a href="{% url 'inicio' %}">Inicio</a>
-        <a href="{% url 'panel' %}">Panel</a>
-      {% endif %}
-      <a href="{% url 'avisos' %}">Avisos</a>
-      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="enlace">Salir</button></form>
+    <p class="lateral-titulo">Menú</p>
+    <nav class="lateral-menu">
+      <a href="{% url 'inicio' %}" class="{% if p == '/' %}activa{% endif %}">{% icono "inicio" %}<span>Mis pendientes</span></a>
+      <a href="{% url 'panel' %}" class="{% if p == '/panel/' %}activa{% endif %}">{% icono "panel" %}<span>Panel</span></a>
+      {% if user.es_jefe or user.es_admin_empresa %}<a href="{% url 'equipo' %}" class="{% if '/equipo' in p or '/concertacion' in p or '/evaluacion' in p %}activa{% endif %}">{% icono "equipo" %}<span>Mi equipo</span></a>{% endif %}
+      <a href="{% url 'resultados' %}" class="{% if '/resultados' in p %}activa{% endif %}">{% icono "resultados" %}<span>Resultados</span></a>
+      <a href="{% url 'repositorio' %}" class="{% if p|slice:':13' == '/repositorio/' %}activa{% endif %}">{% icono "repositorio" %}<span>Repositorio</span></a>
+      {% if user.es_jefe or user.es_admin_empresa %}<a href="{% url 'recordatorios' %}" class="{% if '/recordatorios' in p %}activa{% endif %}">{% icono "recordatorios" %}<span>Recordatorios</span></a>{% endif %}
+    </nav>
+    {% if user.es_admin_empresa %}
+    <p class="lateral-titulo">Administración</p>
+    <nav class="lateral-menu">
+      <a href="{% url 'estructura' %}" class="{% if p|slice:':12' == '/estructura/' %}activa{% endif %}">{% icono "estructura" %}<span>Empresa y estructura</span></a>
+      <a href="{% url 'ingresos' %}" class="{% if p|slice:':9' == '/ingreso/' %}activa{% endif %}">{% icono "ingreso" %}<span>Ingreso y contratación</span></a>
+      <a href="{% url 'periodos' %}" class="{% if '/periodos' in p or '/plantillas' in p %}activa{% endif %}">{% icono "periodos" %}<span>Periodos y plantillas</span></a>
     </nav>
     {% endif %}
-  </header>
-  <main class="contenido">
-    {% for m in messages %}<p class="aviso aviso-{{ m.tags }}">{{ m }}</p>{% endfor %}
-    {% block contenido %}{% endblock %}
-  </main>
-  {% if empresa %}
-  <script>
-    if ("serviceWorker" in navigator) { navigator.serviceWorker.register("/sw.js"); }
-  </script>
-  <script src="{% static 'js/push.js' %}" defer></script>
+    <div class="lateral-pie"><img src="{% static 'img/logo-gevalua.png' %}" alt="gevalua" class="lateral-gevalua"></div>
+  </aside>
+  <div class="velo" onclick="document.body.classList.remove('lateral-abierta')"></div>
+  <div class="principal">
+    <header class="cabecera">
+      <button class="boton-icono solo-movil" type="button" aria-label="Abrir menú" onclick="document.body.classList.toggle('lateral-abierta')">{% icono "menu" %}</button>
+      <div class="cabecera-titulo"><span class="cabecera-empresa">{{ empresa.nombre }}</span></div>
+      <div class="cabecera-derecha">
+        <a class="boton-icono" href="{% url 'avisos' %}" aria-label="Avisos">{% icono "avisos" %}</a>
+        <div class="usuario">
+          <span class="avatar t{{ user.get_full_name|tono }}">{{ user.get_full_name|default:user.email|iniciales }}</span>
+          <span class="usuario-nombre"><strong>{{ user.get_short_name }}</strong><small>{{ user.roles|first }}</small></span>
+        </div>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="boton-icono" aria-label="Salir" title="Salir">{% icono "salir" %}</button></form>
+      </div>
+    </header>
+{% else %}
+<header class="barra">
+  <a class="marca" href="/">
+    {% if empresa and empresa.logo %}<img src="{{ empresa.logo.url }}" alt="" class="logo">{% else %}<img src="{% static 'img/simbolo.png' %}" alt="" class="simbolo">{% endif %}
+    <span>{% if empresa %}{{ empresa.nombre }}{% else %}gevalua{% endif %}</span>
+  </a>
+  {% if user.is_authenticated and empresa %}
+  <nav class="menu">
+    <a class="boton-icono" href="{% url 'avisos' %}" aria-label="Avisos">{% icono "avisos" %}</a>
+    <span class="avatar t{{ user.get_full_name|tono }}">{{ user.get_full_name|default:user.email|iniciales }}</span>
+    <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="boton-icono" aria-label="Salir" title="Salir">{% icono "salir" %}</button></form>
+  </nav>
   {% endif %}
+</header>
+{% endif %}
+    <main class="contenido">
+      {% for m in messages %}<p class="aviso aviso-{{ m.tags }}">{{ m }}</p>{% endfor %}
+      {% block contenido %}{% endblock %}
+    </main>
+{% if user.is_authenticated and empresa and user.puede_ver_vista_completa %}
+  </div>
+</div>
+{% endif %}
+{% endwith %}
+{% endblock %}
+{% if empresa %}
+<script>
+  if ("serviceWorker" in navigator) { navigator.serviceWorker.register("/sw.js"); }
+</script>
+<script src="{% static 'js/push.js' %}" defer></script>
+{% endif %}
 </body>
 </html>
