@@ -31,6 +31,7 @@
       {% if user.es_jefe or user.es_admin_empresa %}<a href="{% url 'equipo' %}" class="{% if '/equipo' in p or '/concertacion' in p or '/evaluacion' in p %}activa{% endif %}">{% icono "equipo" %}<span>Mi equipo</span></a>{% endif %}
       <a href="{% url 'resultados' %}" class="{% if '/resultados' in p %}activa{% endif %}">{% icono "resultados" %}<span>Resultados</span></a>
       <a href="{% url 'repositorio' %}" class="{% if p|slice:':13' == '/repositorio/' %}activa{% endif %}">{% icono "repositorio" %}<span>Repositorio</span></a>
+      <a href="{% url 'mis_cursos' %}" class="{% if p|slice:':16' == '/entrenamientos/' and '/catalogo' not in p and '/seguimiento' not in p %}activa{% endif %}">{% icono "entrenamientos" %}<span>Mis entrenamientos</span></a>
       {% if user.es_jefe or user.es_admin_empresa %}<a href="{% url 'recordatorios' %}" class="{% if '/recordatorios' in p %}activa{% endif %}">{% icono "recordatorios" %}<span>Recordatorios</span></a>{% endif %}
     </nav>
     {% if user.es_admin_empresa %}
@@ -39,6 +40,7 @@
       <a href="{% url 'estructura' %}" class="{% if p|slice:':12' == '/estructura/' %}activa{% endif %}">{% icono "estructura" %}<span>Empresa y estructura</span></a>
       <a href="{% url 'ingresos' %}" class="{% if p|slice:':9' == '/ingreso/' %}activa{% endif %}">{% icono "ingreso" %}<span>Ingreso y contratación</span></a>
       <a href="{% url 'periodos' %}" class="{% if '/periodos' in p or '/plantillas' in p %}activa{% endif %}">{% icono "periodos" %}<span>Periodos y plantillas</span></a>
+      <a href="{% url 'catalogo_cursos' %}" class="{% if '/entrenamientos/catalogo' in p or '/entrenamientos/seguimiento' in p %}activa{% endif %}">{% icono "certificado" %}<span>Entrenamientos</span></a>
     </nav>
     {% endif %}
     <div class="lateral-pie"><img src="{% static 'img/logo-gevalua.png' %}" alt="gevalua" class="lateral-gevalua"></div>
@@ -65,6 +67,7 @@
   </a>
   {% if user.is_authenticated and empresa %}
   <nav class="menu">
+    <a class="boton-icono" href="{% url 'mis_cursos' %}" aria-label="Mis entrenamientos" title="Mis entrenamientos">{% icono "entrenamientos" %}</a>
     <a class="boton-icono" href="{% url 'avisos' %}" aria-label="Avisos">{% icono "avisos" %}</a>
     <span class="avatar t{{ user.get_full_name|tono }}">{{ user.get_full_name|default:user.email|iniciales }}</span>
     <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="boton-icono" aria-label="Salir" title="Salir">{% icono "salir" %}</button></form>

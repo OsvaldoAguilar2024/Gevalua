@@ -27,12 +27,12 @@ def firmar(request, tipo, pk):
         return redirect(m["volver"])
     form = FormularioCodigo(request.POST or None)
     if request.method == "POST" and request.POST.get("accion") == "enviar_codigo":
-        servicios.enviar_codigo(request, tipo, pk, m["contenido"], m["titulo"])
+        servicios.enviar_codigo(request, tipo, pk, m["contenido"], m["titulo"], m.get("firmante"))
         messages.info(request, f"Te enviamos un código a {request.user.email}. Vence en 10 minutos.")
         return redirect(request.path)
     if request.method == "POST" and request.POST.get("accion") == "firmar" and form.is_valid():
         try:
-            servicios.firmar(request, tipo, pk, m["contenido"], m["titulo"], form.cleaned_data["codigo"], m["calidad"])
+            servicios.firmar(request, tipo, pk, m["contenido"], m["titulo"], form.cleaned_data["codigo"], m["calidad"], m.get("firmante"))
         except servicios.ErrorFirma as e:
             messages.error(request, str(e))
             return redirect(request.path)

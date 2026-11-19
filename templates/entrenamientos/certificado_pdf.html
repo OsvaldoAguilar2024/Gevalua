@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es-CO"><head><meta charset="utf-8">
+<style>
+  @page { size: letter landscape; margin: 14mm; }
+  body { font-family: "DejaVu Sans", sans-serif; color: #1b2430; margin: 0; }
+  .marco { border: 3px solid #2f59bb; border-radius: 10px; padding: 16mm 18mm; height: 150mm; position: relative; }
+  .cabecera { display: flex; justify-content: space-between; align-items: center; }
+  .logo { max-height: 22mm; max-width: 60mm; }
+  .empresa { font-size: 10pt; color: #5b6675; text-align: right; }
+  h1 { font-size: 26pt; letter-spacing: 1px; color: #2f59bb; margin: 14mm 0 2mm; text-align: center; }
+  .sub { text-align: center; font-size: 11pt; color: #5b6675; }
+  .nombre { text-align: center; font-size: 22pt; font-weight: bold; margin: 8mm 0 1mm; }
+  .doc { text-align: center; font-size: 10pt; color: #5b6675; }
+  .curso { text-align: center; font-size: 13pt; margin: 6mm 0 2mm; }
+  .curso strong { font-size: 15pt; }
+  .datos { text-align: center; font-size: 10pt; color: #1b2430; }
+  .pie { position: absolute; left: 18mm; right: 18mm; bottom: 12mm; display: flex; justify-content: space-between; align-items: flex-end; }
+  .firma { border-top: 1px solid #1b2430; padding-top: 2mm; width: 75mm; font-size: 9.5pt; }
+  .qr { text-align: right; font-size: 7.5pt; color: #5b6675; }
+  .qr img { width: 28mm; height: 28mm; }
+</style></head>
+<body><div class="marco">
+  <div class="cabecera">
+    <div>{% if empresa.logo %}<img class="logo" src="{{ empresa.logo.url }}">{% endif %}</div>
+    <div class="empresa"><strong>{{ empresa.nombre }}</strong><br>NIT {{ empresa.nit }}</div>
+  </div>
+  <h1>CERTIFICADO</h1>
+  <div class="sub">Hace constar que</div>
+  <div class="nombre">{{ c.nombre }}</div>
+  <div class="doc">{% if c.documento %}Documento {{ c.documento }}{% endif %}</div>
+  <div class="curso">aprobó el entrenamiento<br><strong>{{ c.curso_titulo }}</strong></div>
+  <div class="datos">Intensidad: {{ c.horas }} horas · Nota: {{ c.nota|floatformat:0 }} % · Emitido el {{ c.emitido|date:"d/m/Y" }}{% if c.vence %} · Vence el {{ c.vence|date:"d/m/Y" }}{% endif %}</div>
+  <div class="pie">
+    <div class="firma"><strong>{{ c.responsable|default:empresa.nombre }}</strong><br>Responsable del entrenamiento</div>
+    <div class="qr"><img src="{{ qr }}"><br>Verifica en {{ url_verificacion }}<br>Código {{ c.codigo }}</div>
+  </div>
+</div></body></html>

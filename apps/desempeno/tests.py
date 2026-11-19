@@ -260,3 +260,120 @@ class EvaluacionFlujoTests(EvidenciasTests):
         self.c.force_login(self.gerente.usuario)
         r = self.c.get(reverse("resultados"))
         self.assertContains(r, str(ev.nota_final).replace(".", ","))
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class ExcelTests(EvidenciasTests):
+    """Exportación a Excel donde hay PDF: evaluación, concertación, resultados y repositorio."""
+
+    def leer(self, r):
+        from io import BytesIO
+
+        from openpyxl import load_workbook
+
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r["Content-Type"].startswith("application/vnd.openxmlformats"))
+        self.assertIn(".xlsx", r["Content-Disposition"])
+        return load_workbook(BytesIO(r.content))
+
+    def test_excel_de_evaluacion_resultados_y_repositorio(self):
+        conc = self.concertada()
+        self.c.force_login(self.jefe.usuario)
+        metas = list(conc.metas.all())
+        datos = {"accion": "calificar", **{f"nota-{m.pk}": "4" for m in metas}}
+        self.c.post(reverse("evaluacion", args=[conc.pk]), datos)
+        self.firmar_como(self.jefe.usuario, conc, "evaluacion")
+        self.c.force_login(self.jefe.usuario)
+        wb = self.leer(self.c.get(reverse("excel_desempeno", args=["evaluacion", conc.pk])))
+        self.assertEqual(wb.sheetnames, ["Resumen", "Metas", "Acciones de mejora", "Firmas"])
+        textos = [c.value for fila in wb["Metas"].iter_rows() for c in fila]
+        self.assertIn(metas[0].descripcion, textos)
+        self.assertEqual(wb["Firmas"].max_row, 4)  # título, espacio, encabezado y la firma del jefe
+        wb = self.leer(self.c.get(reverse("excel_desempeno", args=["concertacion", conc.pk])))
+        self.assertIn("Metas", wb.sheetnames)
+        self.c.force_login(self.gerente.usuario)
+        wb = self.leer(self.c.get(reverse("resultados"), {"formato": "xlsx"}))
+        nombres = [c.value for c in wb["Por persona"]["A"]]
+        self.assertIn(self.emp.usuario.get_full_name(), nombres)
+        wb = self.leer(self.c.get(reverse("repositorio"), {"tipo": "evaluacion", "formato": "xlsx"}))
+        self.assertIn(self.emp.usuario.get_full_name(), [c.value for c in wb["Evaluaciones"]["A"]])
+
+    def test_empleado_ajeno_no_descarga_excel(self):
+        conc = self.concertada()
+        from apps.cuentas.models import Usuario
+
+        otro = Usuario.objects.create_user("otro@prueba.co", "clave-segura-123")
+        self.c.force_login(otro)
+        self.assertEqual(self.c.get(reverse("excel_desempeno", args=["evaluacion", conc.pk])).status_code, 404)
+        self.assertEqual(self.c.get(reverse("resultados"), {"formato": "xlsx"}).status_code, 404)
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class ConsultorYCascadaTests(EvidenciasTests):
+    """El consultor ve solo lo habilitado, en solo lectura; el tablero de cascada arma el árbol de jefes."""
+
+    def cerrar_evaluacion(self):
+        conc = self.concertada()
+        self.c.force_login(self.jefe.usuario)
+        datos = {"accion": "calificar", **{f"nota-{m.pk}": "4" for m in conc.metas.all()}}
+        self.c.post(reverse("evaluacion", args=[conc.pk]), datos)
+        self.firmar_como(self.jefe.usuario, conc, "evaluacion")
+        return conc
+
+    def test_consultor_ve_solo_lo_habilitado(self):
+        from apps.estructura.models import PermisoConsultor
+
+        conc = self.cerrar_evaluacion()
+        consultor = Usuario.objects.create_user("auditor@externo.co", "clave-segura-123", nombre="Auditor", es_consultor=True)
+        self.c.force_login(consultor)
+        # sin permiso: nada
+        self.assertEqual(self.c.get(reverse("evaluacion", args=[conc.pk])).status_code, 404)
+        r = self.c.get(reverse("resultados"))
+        self.assertNotContains(r, "Emp</td>")
+        # el administrador le habilita al empleado
+        self.c.force_login(self.gerente.usuario)
+        self.assertContains(self.c.get(reverse("consultores")), "Nada habilitado")
+        self.c.post(reverse("permiso_consultor", args=[consultor.pk]), {"empleados": [self.emp.pk]})
+        self.assertTrue(PermisoConsultor.objects.get(usuario=consultor).empleados.filter(pk=self.emp.pk).exists())
+        self.c.force_login(consultor)
+        self.assertEqual(self.c.get(reverse("evaluacion", args=[conc.pk])).status_code, 200)
+        self.assertEqual(self.c.get(reverse("excel_desempeno", args=["evaluacion", conc.pk])).status_code, 200)
+        r = self.c.get(reverse("repositorio"), {"tipo": "evaluacion"})
+        self.assertContains(r, "Emp")
+        r = self.c.get(reverse("resultados"))
+        self.assertContains(r, "Emp")
+        self.assertNotContains(r, "Jefe</td>")
+        # solo lectura: no puede calificar
+        antes = conc.evaluacion.nota_final
+        self.c.post(reverse("evaluacion", args=[conc.pk]), {"accion": "calificar"})
+        conc.evaluacion.refresh_from_db()
+        self.assertEqual(conc.evaluacion.nota_final, antes)
+        # la concertación del jefe no está habilitada
+        conc_jefe = Concertacion.objects.get(empleado=self.jefe)
+        self.assertEqual(self.c.get(reverse("concertacion", args=[conc_jefe.pk])).status_code, 404)
+
+    def test_consultor_por_area(self):
+        from apps.estructura.models import Area, Cargo, PermisoConsultor
+
+        area = Area.objects.create(nombre="Ventas")
+        sub = Area.objects.create(nombre="Ventas norte", area_padre=area)
+        self.emp.cargo = Cargo.objects.create(area=sub, nombre="Asesor")
+        self.emp.save()
+        consultor = Usuario.objects.create_user("socio@externo.co", "clave-segura-123", es_consultor=True)
+        p = PermisoConsultor.objects.create(usuario=consultor)
+        p.areas.add(area)
+        self.assertEqual(p.ids_empleados(), {self.emp.pk})
+
+    def test_tablero_cascada(self):
+        self.cerrar_evaluacion()
+        self.c.force_login(self.gerente.usuario)
+        r = self.c.get(reverse("tablero_cascada"))
+        self.assertEqual(r.status_code, 200)
+        arbol = r.context["arbol"]
+        self.assertEqual(arbol[0]["e"], self.gerente)
+        self.assertEqual(arbol[0]["hijos"][0]["e"], self.jefe)
+        self.assertEqual(arbol[0]["hijos"][0]["hijos"][0]["e"], self.emp)
+        self.assertEqual(r.context["evaluados"], 1)
+        # el empleado sin roles no entra
+        self.c.force_login(self.emp.usuario)
+        self.assertEqual(self.c.get(reverse("tablero_cascada")).status_code, 404)

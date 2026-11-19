@@ -11,3 +11,5 @@ pillow==13.0.0
 weasyprint==70.0
 pywebpush==2.5.0
 cryptography==50.0.2
+openpyxl==3.1.5
+segno==1.6.6

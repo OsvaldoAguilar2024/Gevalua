@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load iconos %}
+{% block clase_body %}completa{% endblock %}
+{% block contenido %}
+<h1>Resultados</h1>
+{% include "desempeno/_pestanas_resultados.html" with pestana="cascada" %}
+{% if periodos %}
+<form class="filtros" method="get">
+  <select name="periodo">{% for p in periodos %}<option value="{{ p.pk }}" {% if p == periodo %}selected{% endif %}>{{ p.nombre }}</option>{% endfor %}</select>
+  <button class="boton chico">Ver</button>
+</form>
+{% endif %}
+{% if periodo %}
+<section class="indicadores">
+  <div class="indicador">
+    <span class="indicador-icono ic-verde">{% icono "estrella" %}</span>
+    <small>Promedio de las notas propias</small>
+    <div class="indicador-fila"><strong>{% if promedio %}{{ promedio }}<span class="tenue"> / 5</span>{% else %}–{% endif %}</strong>{% if nivel_promedio %}<span class="etiqueta azul">{{ nivel_promedio }}</span>{% endif %}</div>
+  </div>
+  <div class="indicador">
+    <span class="indicador-icono ic-azul">{% icono "equipo" %}</span>
+    <small>Evaluados</small>
+    <div class="indicador-fila"><strong>{{ evaluados }}<span class="tenue"> / {{ personas }}</span></strong></div>
+  </div>
+</section>
+<div class="columnas">
+  <section class="tarjeta">
+    <div class="tarjeta-titulo"><h2>Organigrama con resultados</h2></div>
+    <p class="ayuda">Cada barra es el resultado en cascada (escala de 1 a 5). En un jefe combina su nota (50 %) con el promedio de su equipo (50 %). Abre cada jefe para ver su equipo.</p>
+    {% if arbol %}<ul class="cascada">{% for n in arbol %}{% include "desempeno/_nodo_cascada.html" with n=n %}{% endfor %}</ul>
+    {% else %}<p class="tenue">No hay personas para mostrar.</p>{% endif %}
+  </section>
+  <section class="tarjeta">
+    <div class="tarjeta-titulo"><h2>Distribución por nivel</h2></div>
+    <div class="barras">
+      {% for d in distribucion %}<div class="barra-fila"><span>{{ d.nivel }}</span><div class="pista"><i class="{{ d.color }}" style="width: {{ d.pct }}%"></i></div><span>{{ d.n }}</span></div>{% endfor %}
+    </div>
+  </section>
+</div>
+{% else %}<p class="tenue">Aún no hay periodos.</p>{% endif %}
+{% endblock %}

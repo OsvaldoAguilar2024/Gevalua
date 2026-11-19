@@ -45,6 +45,7 @@
   <div class="acciones">
     <a class="boton" href="{% url 'evaluacion' c.pk %}">{% if c.estado == "cerrada" %}Ver evaluación{% elif rol == "empleado" %}Autoevaluación{% else %}Evaluar{% endif %}</a>
     <a class="boton secundario" href="{% url 'pdf_desempeno' 'concertacion' c.pk %}" target="_blank">PDF de la concertación</a>
+    <a class="boton secundario" href="{% url 'excel_desempeno' 'concertacion' c.pk %}">Excel</a>
   </div>
 {% endif %}
 {% if firmas %}

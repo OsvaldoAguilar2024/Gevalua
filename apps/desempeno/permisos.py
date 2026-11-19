@@ -6,7 +6,7 @@ def empleado_de(usuario):
 
 
 def rol_en(concertacion, usuario):
-    """'empleado', 'jefe', 'superior' (jefe en cascada), 'admin' o None."""
+    """'empleado', 'jefe', 'superior' (jefe en cascada), 'admin', 'consultor' (solo lectura) o None."""
     yo = empleado_de(usuario)
     if yo is not None:
         if concertacion.empleado_id == yo.pk:
@@ -22,6 +22,12 @@ def rol_en(concertacion, usuario):
             jefe = jefe.jefe
     if usuario.es_admin_empresa:
         return "admin"
+    if usuario.es_consultor:
+        from apps.estructura.alcance import ids_como_consultor
+
+        ids = ids_como_consultor(usuario)
+        if ids is None or concertacion.empleado_id in ids:
+            return "consultor"  # solo lectura: las acciones exigen 'jefe' o 'empleado'
     return None
 
 

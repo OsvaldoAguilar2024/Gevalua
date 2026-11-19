@@ -1,15 +1,18 @@
+from django import forms
 from django.contrib import messages
 from django.db.models import Count, Q
-from django.shortcuts import get_object_or_404, redirect
+from django.http import Http404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView, ListView, TemplateView, UpdateView
 
+from apps.cuentas.models import Usuario
 from apps.cuentas.servicios import enviar_correo_activacion
 from apps.nucleo.auditoria import registrar
 from apps.nucleo.permisos import AdminEmpresaRequerido, JefeRequerido
 
 from .forms import FormularioArea, FormularioCargo, FormularioEmpleado
-from .models import Area, Cargo, Empleado
+from .models import Area, Cargo, Empleado, PermisoConsultor
 
 
 class FormularioGenericoMixin:
@@ -153,3 +156,50 @@ class Organigrama(JefeRequerido, TemplateView):
             yo = getattr(self.request.user, "empleado", None)
             ctx["filas"] = ([{"empleado": yo, "nivel": 0, "n_equipo": len(hijos.get(yo.pk, []))}] + arbol(yo.pk, 1)) if yo else []
         return ctx
+
+
+# --- Consultores: qué puede consultar cada uno (solo lectura) ----------------------------------------------
+
+class FormularioPermisoConsultor(forms.ModelForm):
+    class Meta:
+        model = PermisoConsultor
+        fields = ["toda_la_empresa", "areas", "empleados"]
+        widgets = {"areas": forms.CheckboxSelectMultiple, "empleados": forms.SelectMultiple(attrs={"size": 8})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["empleados"].queryset = Empleado.objects.filter(estado=Empleado.Estado.ACTIVO).select_related("usuario")
+        self.fields["empleados"].help_text = "Mantén presionado Ctrl o ⌘ para elegir varias."
+
+
+def consultores(request):
+    if not (request.user.is_authenticated and request.user.es_admin_empresa):
+        raise Http404
+    filas = []
+    for u in Usuario.objects.filter(es_consultor=True, is_active=True):
+        p = getattr(u, "permiso_consultor", None)
+        if p is None:
+            resumen = "Nada habilitado"
+        elif p.toda_la_empresa:
+            resumen = "Toda la empresa"
+        else:
+            partes = [str(a) for a in p.areas.all()] + [str(e) for e in p.empleados.select_related("usuario")]
+            resumen = ", ".join(partes) or "Nada habilitado"
+        filas.append({"u": u, "resumen": resumen})
+    return render(request, "estructura/consultores.html", {"filas": filas})
+
+
+def permiso_consultor(request, pk):
+    if not (request.user.is_authenticated and request.user.es_admin_empresa):
+        raise Http404
+    usuario = get_object_or_404(Usuario, pk=pk, es_consultor=True)
+    permiso, _ = PermisoConsultor.objects.get_or_create(usuario=usuario)
+    form = FormularioPermisoConsultor(request.POST or None, instance=permiso)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        registrar(request, "editar", permiso, detalle=f"consultor {usuario.email}")
+        messages.success(request, f"Permisos de {usuario} guardados.")
+        return redirect("consultores")
+    return render(request, "estructura/formulario.html", {
+        "form": form, "titulo": f"Qué puede consultar {usuario}", "volver": "/estructura/consultores/",
+    })

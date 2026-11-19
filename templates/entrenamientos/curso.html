@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block clase_body %}{% if user.puede_ver_vista_completa %}completa{% else %}simple{% endif %}{% endblock %}
+{% block contenido %}
+<p><a href="{% if propio %}{% url 'mis_cursos' %}{% else %}{% url 'seguimiento_cursos' %}{% endif %}">← {% if propio %}Mis entrenamientos{% else %}Seguimiento{% endif %}</a></p>
+<div class="encabezado">
+  <div><h1>{{ c.titulo }}</h1><p class="tenue">{% if not propio %}{{ a.empleado }} · {% endif %}{{ c.horas }} h · nota mínima {{ c.nota_minima }} %{% if c.vigencia_meses %} · vigencia {{ c.vigencia_meses }} meses{% endif %}</p></div>
+  <span class="etiqueta {{ a.color }}">{{ a.etiqueta }}</span>
+</div>
+{% if c.descripcion %}<p>{{ c.descripcion|linebreaksbr }}</p>{% endif %}
+
+{% if propio and video %}
+<section class="tarjeta">
+  <video id="video" src="{{ video }}" controls controlsList="nodownload" preload="metadata" playsinline style="width: 100%; border-radius: 10px; background: #000"></video>
+  <div class="barra-avance"><span id="barra" style="width: {{ a.avance }}%"></span></div>
+  <p class="tenue">Has visto el <strong id="pct">{{ a.avance }}</strong> % del video. El examen se habilita al {{ c.avance_para_examen }} %.</p>
+</section>
+{% endif %}
+
+<section class="tarjeta">
+  <h2>Examen</h2>
+  {% if certificado %}
+    <p>Aprobado con <strong>{{ certificado.nota|floatformat:0 }} %</strong> el {{ certificado.emitido|date:"d/m/Y" }}.{% if certificado.vence %} {% if certificado.vencido %}<span class="etiqueta rojo">Venció el {{ certificado.vence|date:"d/m/Y" }}</span>{% else %}Vence el {{ certificado.vence|date:"d/m/Y" }}.{% endif %}{% endif %}</p>
+    <p><a class="boton" href="{% url 'certificado_pdf' certificado.codigo %}" target="_blank" rel="noopener">Descargar certificado PDF</a> <span class="tenue">Código {{ certificado.codigo }}</span></p>
+  {% elif propio %}
+    <p>{{ a.intentos_restantes }} intento{{ a.intentos_restantes|pluralize }} disponible{{ a.intentos_restantes|pluralize }} de {{ c.max_intentos }}.</p>
+    <a id="boton-examen" class="boton" href="{% url 'examen_curso' a.pk %}" {% if not a.examen_habilitado %}style="display: none"{% endif %}>Presentar el examen</a>
+    {% if not a.examen_habilitado and a.intentos_restantes %}<p id="aviso-examen" class="ayuda">Termina de ver el video para presentar el examen.</p>{% endif %}
+  {% else %}
+    <p class="tenue">Aún no ha aprobado. Video visto {{ a.avance }} %.</p>
+  {% endif %}
+  {% if intentos %}
+  <div class="tabla-envoltura"><table class="tabla"><thead><tr><th>Intento</th><th>Fecha</th><th>Nota</th><th>Resultado</th></tr></thead><tbody>
+  {% for i in intentos %}<tr><td>{{ forloop.revcounter }}</td><td>{{ i.terminado|date:"d/m/Y H:i" }}</td><td>{{ i.nota|floatformat:0 }} %</td><td>{% if i.aprobado %}<span class="etiqueta verde">Aprobó</span>{% else %}<span class="etiqueta rojo">No aprobó</span>{% endif %}</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% endif %}
+  {% if user.es_admin_empresa and not certificado and a.intentos_restantes == 0 %}
+  <form method="post" action="{% url 'intento_extra' a.pk %}">{% csrf_token %}<button class="boton chico secundario">Dar un intento más</button></form>
+  {% endif %}
+</section>
+
+{% if propio and video %}
+<script>
+(function () {
+  var v = document.getElementById("video"), visto = {{ a.avance }}, enviado = visto, csrf = "{{ csrf_token }}";
+  function enviar() {
+    if (visto <= enviado) return;
+    enviado = visto;
+    var datos = new FormData(); datos.append("pct", visto);
+    fetch("{% url 'avance_curso' a.pk %}", {method: "POST", body: datos, headers: {"X-CSRFToken": csrf}, credentials: "same-origin"})
+      .then(function (r) { return r.json(); })
+      .then(function (d) { if (d.examen) { var b = document.getElementById("boton-examen"), m = document.getElementById("aviso-examen"); if (b) b.style.display = ""; if (m) m.style.display = "none"; } });
+  }
+  // Solo cuenta lo reproducido en orden: adelantar el video no suma avance.
+  var frontera = 0;
+  function pintar() { document.getElementById("pct").textContent = visto; document.getElementById("barra").style.width = visto + "%"; }
+  v.addEventListener("loadedmetadata", function () {
+    frontera = v.duration * visto / 100;
+    if (visto < 100) v.currentTime = frontera;
+  });
+  v.addEventListener("timeupdate", function () {
+    if (!v.duration || v.seeking) return;
+    var t = v.currentTime;
+    if (t <= frontera + 3) frontera = Math.max(frontera, t);
+    var pct = Math.min(100, Math.floor(frontera * 100 / v.duration));
+    if (frontera >= v.duration - 1) pct = 100;
+    if (pct > visto) { visto = pct; pintar(); }
+  });
+  v.addEventListener("ended", enviar);
+  v.addEventListener("pause", enviar);
+  setInterval(enviar, 10000);
+  window.addEventListener("pagehide", enviar);
+})();
+</script>
+{% endif %}
+{% endblock %}

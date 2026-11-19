@@ -37,4 +37,11 @@ def pendientes_de(usuario):
 
     for c in abiertas.filter(jefe=yo, estado=Concertacion.Estado.ACEPTADA, periodo__fecha_fin__lte=timezone.localdate()):
         items.append({"texto": f"Evaluar a {c.empleado.usuario.get_short_name()} ({c.periodo})", "icono": "estrella", "color": "verde", "url": reverse("evaluacion", args=[c.pk])})
+    from apps.entrenamientos.models import Asignacion
+
+    for a in Asignacion.objects.filter(empleado=yo).select_related("curso"):
+        if a.estado in ("pendiente", "en_curso", "atrasado"):
+            limite = f" (hasta el {a.fecha_limite:%d/%m/%Y})" if a.fecha_limite else ""
+            items.append({"texto": f"Hacer el curso «{a.curso.titulo}»{limite}", "icono": "entrenamientos",
+                          "color": "ambar" if a.estado == "atrasado" else "teal", "url": reverse("curso_asignado", args=[a.pk])})
     return items

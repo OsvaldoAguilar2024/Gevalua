@@ -136,3 +136,35 @@ class Empleado(models.Model):
             if incluir_indirectos:
                 pendientes.extend(emp.equipo.filter(estado=self.Estado.ACTIVO).select_related("usuario", "cargo"))
         return resultado
+
+
+class PermisoConsultor(models.Model):
+    """Lo que el administrador le habilita a un consultor (solo lectura): toda la empresa, unas áreas o unas personas."""
+
+    usuario = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="permiso_consultor")
+    toda_la_empresa = models.BooleanField("toda la empresa", default=False)
+    areas = models.ManyToManyField(Area, blank=True, related_name="+", verbose_name="áreas",
+                                   help_text="Incluye las áreas que dependen de ellas.")
+    empleados = models.ManyToManyField(Empleado, blank=True, related_name="+", verbose_name="personas")
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "permiso de consultor"
+        verbose_name_plural = "permisos de consultores"
+
+    def __str__(self):
+        return f"Permiso de {self.usuario}"
+
+    def ids_empleados(self):
+        """None = toda la empresa; si no, el conjunto de empleados habilitados."""
+        if self.toda_la_empresa:
+            return None
+        areas = set(self.areas.values_list("pk", flat=True))
+        pendientes = list(areas)
+        while pendientes:  # subáreas en cascada
+            hijas = set(Area.objects.filter(area_padre_id__in=pendientes).values_list("pk", flat=True)) - areas
+            areas |= hijas
+            pendientes = list(hijas)
+        ids = set(self.empleados.values_list("pk", flat=True))
+        ids |= set(Empleado.objects.filter(cargo__area_id__in=areas).values_list("pk", flat=True))
+        return ids

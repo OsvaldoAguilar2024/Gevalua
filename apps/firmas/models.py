@@ -5,7 +5,8 @@ from django.db import models
 class CodigoFirma(models.Model):
     """Código de un solo uso enviado al correo del firmante. Se guarda solo su huella."""
 
-    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE, related_name="+")
+    email = models.EmailField(blank=True, help_text="Correo al que se envió el código (firmantes sin cuenta, como el candidato).")
     documento_tipo = models.CharField(max_length=30)
     documento_id = models.PositiveBigIntegerField()
     huella_documento = models.CharField(max_length=64)
@@ -30,7 +31,10 @@ class Firma(models.Model):
 
     documento_tipo = models.CharField(max_length=30, choices=Documento.choices)
     documento_id = models.PositiveBigIntegerField()
-    firmante = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="firmas")
+    firmante = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="firmas",
+        help_text="Vacío cuando firma alguien sin cuenta, como el candidato que firma su contrato.",
+    )
     firmante_nombre = models.CharField(max_length=200)
     firmante_documento = models.CharField(max_length=20, blank=True)
     firmante_email = models.EmailField()

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block clase_body %}simple{% endblock %}
+{% block contenido %}
+<section class="tarjeta angosta">
+  <h1>Confirma que eres tú</h1>
+  <p>Por seguridad, quienes administran la plataforma entran con un segundo paso. Escribe el código que enviamos a <strong>{{ user.email }}</strong>.</p>
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <label for="{{ form.codigo.id_for_label }}">{{ form.codigo.label }}</label>
+    {{ form.codigo }}
+    <label class="casilla">{{ form.recordar }} {{ form.recordar.label }}</label>
+    <button class="boton grande">Entrar</button>
+  </form>
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <input type="hidden" name="accion" value="reenviar">
+    <button class="enlace">No me llegó: enviar otro código</button>
+  </form>
+  <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="enlace">Salir</button></form>
+</section>
+{% endblock %}

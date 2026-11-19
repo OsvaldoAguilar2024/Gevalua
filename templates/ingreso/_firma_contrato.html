@@ -1,0 +1,20 @@
+<div class="firma-contrato">
+  <p><strong>Firma electrónica</strong></p>
+  <ul class="lista-firmas">
+    <li>Candidato:
+      {% if r.firma.candidato %}<span class="etiqueta verde">Firmó {{ r.firma.candidato.fecha|date:"d/m/Y H:i" }}</span>
+      {% elif r.firma.ultimo_envio %}<span class="etiqueta {% if r.firma.ultimo_envio.vigente %}ambar{% else %}rojo{% endif %}">{% if r.firma.ultimo_envio.vigente %}Enlace enviado{% else %}Enlace vencido{% endif %}</span> <span class="tenue">{{ r.firma.ultimo_envio.enviado_a }} · {{ r.firma.ultimo_envio.creado|date:"d/m/Y H:i" }}</span>
+      {% else %}<span class="etiqueta ambar">Pendiente</span>{% endif %}</li>
+    <li>Empresa:
+      {% if r.firma.empleador %}<span class="etiqueta verde">Firmó {{ r.firma.empleador.fecha|date:"d/m/Y H:i" }}</span> <span class="tenue">{{ r.firma.empleador.firmante_nombre }}</span>
+      {% else %}<span class="etiqueta ambar">Pendiente</span>{% endif %}</li>
+  </ul>
+  {% if r.firma.se_puede and not r.firma.candidato or r.firma.se_puede and not r.firma.empleador %}
+  <div class="acciones">
+    {% if not r.firma.candidato %}
+    <form method="post" action="{% url 'enviar_a_firma' r.pk %}">{% csrf_token %}<button class="boton chico secundario" {% if not proceso.candidato_email %}disabled title="Falta el correo del candidato"{% endif %}>{% if r.firma.ultimo_envio %}Reenviar{% else %}Enviar{% endif %} al candidato para firmar</button></form>
+    {% endif %}
+    {% if not r.firma.empleador %}<a class="boton chico" href="{% url 'firmar' 'contrato' r.pk %}">Firmar por la empresa</a>{% endif %}
+  </div>
+  {% endif %}
+</div>

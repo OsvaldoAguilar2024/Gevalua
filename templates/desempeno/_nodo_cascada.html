@@ -1,0 +1,10 @@
+{% load iconos %}<li>
+  {% if n.hijos %}<details {% if n.e.jefe_id is None %}open{% endif %}><summary>{% endif %}
+  <div class="nodo-cascada">
+    <span class="persona"><span class="avatar chico t{{ n.e.usuario.get_full_name|tono }}">{{ n.e.usuario.get_full_name|default:n.e.usuario.email|iniciales }}</span>
+      <span><strong>{{ n.e }}</strong><small>{{ n.e.cargo.nombre|default:"Sin cargo" }}{% if n.equipo %} · {{ n.equipo }} a cargo{% endif %} · propia {{ n.propia|default:"–" }}</small></span></span>
+    <div class="pista"><i class="{{ n.color }}" style="width: {{ n.ancho }}%"></i></div>
+    <span class="nota-cascada">{{ n.cascada|default:"–" }}</span>
+  </div>
+  {% if n.hijos %}</summary><ul class="cascada">{% for h in n.hijos %}{% include "desempeno/_nodo_cascada.html" with n=h %}{% endfor %}</ul></details>{% endif %}
+</li>

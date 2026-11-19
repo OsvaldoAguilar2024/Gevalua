@@ -4,6 +4,7 @@ Todo lo que cambia entre entornos se lee de variables de entorno (ver .env.examp
 """
 
 import os
+import sys
 from pathlib import Path
 
 import dj_database_url
@@ -61,6 +62,7 @@ SHARED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.admin",
     "apps.cuentas",
+    "apps.cursos",
     "storages",
     "anymail",
 ]
@@ -78,6 +80,7 @@ TENANT_APPS = [
     "apps.firmas",
     "apps.desempeno",
     "apps.notificaciones",
+    "apps.entrenamientos",
 ]
 
 INSTALLED_APPS = list(SHARED_APPS) + [a for a in TENANT_APPS if a not in SHARED_APPS]
@@ -99,6 +102,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "apps.cuentas.middleware.SeguridadMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -139,6 +143,14 @@ LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "inicio"
 LOGOUT_REDIRECT_URL = "login"
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 72  # el enlace de activación dura 3 días
+
+# Segundo factor (código por correo) obligatorio para administradores de empresa y operadores de la plataforma,
+# y autorización de datos personales (Ley 1581) al primer ingreso. Se apagan solo al correr las pruebas, que los
+# prueban por separado. La Empresa Demo queda exenta del segundo factor porque sus correos no existen.
+PRUEBAS = sys.argv[1:2] == ["test"]
+SEGUNDO_FACTOR_OBLIGATORIO = env_bool("SEGUNDO_FACTOR_OBLIGATORIO", not PRUEBAS)
+SEGUNDO_FACTOR_EXENTOS = env_list("SEGUNDO_FACTOR_EXENTOS", "demo")
+AUTORIZACION_DATOS_OBLIGATORIA = env_bool("AUTORIZACION_DATOS_OBLIGATORIA", not PRUEBAS)
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

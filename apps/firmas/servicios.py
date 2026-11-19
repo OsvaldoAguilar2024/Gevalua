@@ -6,6 +6,7 @@ El texto de aceptación es provisional: Gio lo valida como abogado antes de prod
 import hashlib
 import json
 import secrets
+from dataclasses import dataclass
 from datetime import timedelta
 
 from django.conf import settings
@@ -31,6 +32,27 @@ class ErrorFirma(Exception):
     pass
 
 
+@dataclass
+class Firmante:
+    """Quién firma. `usuario` es None cuando firma alguien sin cuenta (el candidato firma su contrato por enlace)."""
+
+    nombre: str
+    email: str
+    documento: str = ""
+    usuario: object = None
+
+    @classmethod
+    def de_usuario(cls, usuario):
+        return cls(nombre=usuario.get_full_name(), email=usuario.email, documento=usuario.documento, usuario=usuario)
+
+    @property
+    def nombre_corto(self):
+        return (self.nombre or self.email).split(" ")[0]
+
+    def filtro(self):
+        return {"usuario": self.usuario} if self.usuario is not None else {"usuario__isnull": True, "email": self.email}
+
+
 def huella(contenido):
     """SHA-256 de una representación canónica del documento (dict o texto)."""
     if not isinstance(contenido, (str, bytes)):
@@ -40,30 +62,31 @@ def huella(contenido):
     return hashlib.sha256(contenido).hexdigest()
 
 
-def enviar_codigo(request, documento_tipo, documento_id, contenido, titulo):
-    usuario = request.user
+def enviar_codigo(request, documento_tipo, documento_id, contenido, titulo, firmante=None):
+    firmante = firmante or Firmante.de_usuario(request.user)
     codigo = f"{secrets.randbelow(10**6):06d}"
-    CodigoFirma.objects.filter(usuario=usuario, documento_tipo=documento_tipo, documento_id=documento_id, usado=False).update(usado=True)
+    pendientes = CodigoFirma.objects.filter(documento_tipo=documento_tipo, documento_id=documento_id, usado=False, **firmante.filtro())
+    pendientes.update(usado=True)
     registro = CodigoFirma.objects.create(
-        usuario=usuario, documento_tipo=documento_tipo, documento_id=documento_id,
+        usuario=firmante.usuario, email=firmante.email, documento_tipo=documento_tipo, documento_id=documento_id,
         huella_documento=huella(contenido), codigo_hash=make_password(codigo),
         expira=timezone.now() + VIGENCIA_CODIGO,
     )
     send_mail(
         f"Tu código para firmar: {codigo}",
-        f"Hola {usuario.get_short_name()}:\n\nTu código para firmar «{titulo}» es:\n\n    {codigo}\n\n"
+        f"Hola {firmante.nombre_corto}:\n\nTu código para firmar «{titulo}» es:\n\n    {codigo}\n\n"
         f"Vence en {int(VIGENCIA_CODIGO.total_seconds() // 60)} minutos. Si no estás firmando nada, ignora este correo.",
         settings.DEFAULT_FROM_EMAIL,
-        [usuario.email],
+        [firmante.email],
     )
-    registrar(request, "enviar_codigo_firma", entidad=documento_tipo, detalle=f"documento {documento_id}")
+    registrar(request, "enviar_codigo_firma", entidad=documento_tipo, detalle=f"documento {documento_id} · {firmante.email}")
     return registro
 
 
-def firmar(request, documento_tipo, documento_id, contenido, titulo, codigo, calidad):
-    usuario = request.user
+def firmar(request, documento_tipo, documento_id, contenido, titulo, codigo, calidad, firmante=None):
+    firmante = firmante or Firmante.de_usuario(request.user)
     registro = (
-        CodigoFirma.objects.filter(usuario=usuario, documento_tipo=documento_tipo, documento_id=documento_id, usado=False)
+        CodigoFirma.objects.filter(documento_tipo=documento_tipo, documento_id=documento_id, usado=False, **firmante.filtro())
         .order_by("-creado").first()
     )
     if registro is None:
@@ -81,13 +104,14 @@ def firmar(request, documento_tipo, documento_id, contenido, titulo, codigo, cal
     registro.usado = True
     registro.save(update_fields=["usado"])
     firma = Firma.objects.create(
-        documento_tipo=documento_tipo, documento_id=documento_id, firmante=usuario,
-        firmante_nombre=usuario.get_full_name(), firmante_documento=usuario.documento, firmante_email=usuario.email,
+        documento_tipo=documento_tipo, documento_id=documento_id, firmante=firmante.usuario,
+        firmante_nombre=firmante.nombre, firmante_documento=firmante.documento, firmante_email=firmante.email,
         calidad=calidad, huella_documento=registro.huella_documento,
-        texto_aceptacion=TEXTO_ACEPTACION.format(titulo=titulo, email=usuario.email),
+        texto_aceptacion=TEXTO_ACEPTACION.format(titulo=titulo, email=firmante.email),
         ip=ip_de(request), agente=request.META.get("HTTP_USER_AGENT", "")[:300], codigo_ref=registro,
     )
-    registrar(request, "firmar", firma, entidad=documento_tipo, detalle=f"documento {documento_id} · {firma.huella_documento}")
+    registrar(request, "firmar", firma, entidad=documento_tipo,
+              detalle=f"documento {documento_id} · {firmante.email} · {firma.huella_documento}")
     return firma
 
 

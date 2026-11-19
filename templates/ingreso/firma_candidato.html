@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block clase_body %}simple{% endblock %}
+{% block contenido %}
+<section class="tarjeta angosta">
+  {% if invalido %}
+    <h1>Este enlace ya no sirve</h1>
+    <p>El enlace venció o el contrato cambió después de enviarlo. Pide a {{ empresa.nombre }} que te lo envíe de nuevo.</p>
+  {% else %}
+    <h1>Firma tu contrato</h1>
+    <p><strong>{{ titulo }}</strong></p>
+    <p><a class="boton secundario" href="{% url 'archivo_candidato' token %}" target="_blank" rel="noopener">Abrir el contrato ({{ req.nombre_archivo|default:"documento" }})</a></p>
+    {% if ya_firmo %}
+      <p class="aviso aviso-success">Firmaste este contrato el {{ ya_firmo.fecha|date:"d/m/Y H:i" }}. No tienes que hacer nada más.</p>
+    {% else %}
+      <p class="ayuda">{{ texto }}</p>
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="accion" value="enviar_codigo">
+        <button class="boton secundario grande">Enviarme el código al correo</button>
+      </form>
+      <form method="post">{% csrf_token %}
+        <input type="hidden" name="accion" value="firmar">
+        <label for="id_codigo">Código de 6 dígitos</label>
+        {{ form.codigo }}
+        <button class="boton grande">Firmar</button>
+      </form>
+    {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

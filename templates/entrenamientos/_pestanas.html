@@ -1,0 +1,5 @@
+<nav class="pestanas">
+  <a class="{% if pestana == 'catalogo' %}activa{% endif %}" href="{% url 'catalogo_cursos' %}">Catálogo</a>
+  <a class="{% if pestana == 'seguimiento' %}activa{% endif %}" href="{% url 'seguimiento_cursos' %}">Seguimiento</a>
+  <a class="{% if pestana == 'mios' %}activa{% endif %}" href="{% url 'mis_cursos' %}">Mis cursos</a>
+</nav>

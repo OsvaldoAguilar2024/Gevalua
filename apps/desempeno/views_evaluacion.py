@@ -13,6 +13,7 @@ from apps.estructura.forms import FECHA
 from apps.estructura.models import Area, Empleado
 from apps.firmas.models import Firma
 from apps.firmas.servicios import firmas_de
+from apps.nucleo import excel
 from apps.nucleo.auditoria import registrar
 
 from . import catalogo
@@ -195,8 +196,43 @@ def pdf(request, tipo, pk):
     return respuesta
 
 
-def resultados(request):
-    """Resultados por persona, equipo y área. El resultado de un jefe combina el suyo con el de su equipo."""
+def excel_documento(request, tipo, pk):
+    """Excel de la concertación o de la evaluación: metas, pesos, notas, acciones de mejora y firmas."""
+    c, ev = obtener(pk)
+    exigir_rol(c, request.user)
+    if tipo not in ("concertacion", "evaluacion"):
+        raise Http404
+    metas = list(c.metas.select_related("calificacion"))
+    if tipo == "evaluacion":
+        enc = ["Meta", "Tipo", "Indicador", "Objetivo", "Peso %", "Autoevaluación", "Nota del jefe", "Comentario del jefe", "Comentario del empleado"]
+        filas = []
+        for m in metas:
+            cal = getattr(m, "calificacion", None)
+            filas.append([m.descripcion, m.get_tipo_display(), m.indicador, m.valor_objetivo, m.peso,
+                          cal and cal.autoevaluacion, cal and cal.nota_jefe, cal and cal.comentario, cal and cal.comentario_empleado])
+        nota = ev.nota_final if ev.cerrada else ev.calcular()
+        resumen = [["Empleado", c.empleado.usuario.get_full_name()], ["Documento", c.empleado.usuario.documento],
+                   ["Cargo", c.empleado.cargo.nombre if c.empleado.cargo_id else ""], ["Jefe", c.jefe.usuario.get_full_name()],
+                   ["Periodo", c.periodo.nombre], ["Nota final", nota], ["Nivel", catalogo.nivel_de(nota) if nota is not None else ""],
+                   ["Estado", "Cerrada" if ev.cerrada else "Abierta"], ["Fortalezas", ev.fortalezas],
+                   ["Aspectos a mejorar", ev.aspectos_mejorar], ["Plan siguiente periodo", ev.plan_siguiente],
+                   ["Recomendación", ev.get_recomendacion_display() if ev.recomendacion else ""], ["Observaciones", ev.observaciones]]
+        hojas = [("Resumen", ["Campo", "Valor"], resumen), ("Metas", enc, filas),
+                 ("Acciones de mejora", ["Acción", "Meta", "Fecha compromiso"],
+                  [[a.descripcion, a.meta.descripcion if a.meta_id else "", a.fecha_compromiso] for a in ev.acciones.select_related("meta")])]
+    else:
+        hojas = [("Metas", ["Meta", "Tipo", "Indicador", "Objetivo", "Peso %", "Evidencia esperada"],
+                  [[m.descripcion, m.get_tipo_display(), m.indicador, m.valor_objetivo, m.peso, m.evidencia_requerida] for m in metas])]
+    hojas.append(("Firmas", ["Firmante", "Documento", "Correo", "Firma como", "Fecha", "IP", "Huella SHA-256"],
+                  [[f.firmante_nombre, f.firmante_documento, f.firmante_email, f.calidad, f.fecha, f.ip, f.huella_documento]
+                   for f in firmas_de(tipo, c.pk)]))
+    registrar(request, "exportar_excel", c, detalle=tipo)
+    titulo = f"{'Evaluación' if tipo == 'evaluacion' else 'Concertación'} · {c.periodo.nombre} · {c.empleado.usuario.get_full_name()}"
+    return excel.respuesta(f"{tipo}-{c.periodo.nombre}-{c.empleado.usuario.get_full_name()}", hojas, titulo)
+
+
+def calcular_resultados(request):
+    """Periodo elegido, notas cerradas y resultado en cascada de cada persona visible para el usuario."""
     u = request.user
     if not u.is_authenticated or not (u.es_admin_empresa or u.es_jefe or u.es_consultor):
         raise Http404
@@ -206,7 +242,7 @@ def resultados(request):
     else:  # por defecto, el periodo más reciente que ya tiene evaluaciones cerradas
         periodo = periodos.filter(concertaciones__evaluacion__fecha_cierre__isnull=False).distinct().first() or periodos.first()
     if periodo is None:
-        return render(request, "desempeno/resultados.html", {"periodos": periodos})
+        return {"periodos": periodos, "periodo": None}
     notas = {
         ev.concertacion.empleado_id: ev.nota_final
         for ev in Evaluacion.objects.filter(concertacion__periodo=periodo, fecha_cierre__isnull=False).select_related("concertacion")
@@ -232,20 +268,73 @@ def resultados(request):
         memo[e.pk] = r
         return r
 
-    if u.es_admin_empresa or u.es_consultor:
-        visibles = activos
-    else:
-        yo = empleado_de(u)
-        visibles = [yo] + yo.subordinados() if yo else []
+    from apps.estructura.alcance import ids_visibles
+
+    ids = ids_visibles(u)
+    visibles = activos if ids is None else [e for e in activos if e.pk in ids]
     filas = []
     for e in visibles:
         r = cascada(e)
         filas.append({"e": e, "propia": notas.get(e.pk), "cascada": r, "equipo": len(hijos.get(e.pk, [])),
                       "nivel": catalogo.nivel_de(r) if r is not None else ""})
+    return {"periodos": periodos, "periodo": periodo, "filas": filas, "hijos": hijos}
+
+
+def resultados(request):
+    """Resultados por persona, equipo y área. El resultado de un jefe combina el suyo con el de su equipo."""
+    datos = calcular_resultados(request)
+    periodos, periodo = datos["periodos"], datos["periodo"]
+    if periodo is None:
+        return render(request, "desempeno/resultados.html", {"periodos": periodos})
+    filas = datos["filas"]
     por_area = {}
     for f in filas:
         if f["propia"] is not None and f["e"].cargo_id:
             por_area.setdefault(f["e"].cargo.area, []).append(f["propia"])
     areas = [{"area": a, "promedio": (sum(v) / len(v)).quantize(Decimal("0.01")), "n": len(v)} for a, v in sorted(por_area.items(), key=lambda x: x[0].nombre)]
+    if request.GET.get("formato") == "xlsx":
+        registrar(request, "exportar_excel", periodo, detalle="resultados")
+        personas = [[f["e"].usuario.get_full_name(), f["e"].usuario.documento, f["e"].cargo.nombre if f["e"].cargo_id else "",
+                     f["e"].cargo.area.nombre if f["e"].cargo_id else "", f["e"].jefe.usuario.get_full_name() if f["e"].jefe_id else "",
+                     f["equipo"], f["propia"], f["cascada"], f["nivel"]] for f in filas]
+        return excel.respuesta(f"resultados-{periodo.nombre}", [
+            ("Por persona", ["Persona", "Documento", "Cargo", "Área", "Jefe", "Personas a cargo", "Nota propia", "En cascada", "Nivel"], personas),
+            ("Por área", ["Área", "Promedio", "Evaluados"], [[a["area"].nombre, a["promedio"], a["n"]] for a in areas]),
+        ], f"Resultados · {periodo.nombre}")
     registrar(request, "consultar_resultados", periodo)
     return render(request, "desempeno/resultados.html", {"periodos": periodos, "periodo": periodo, "filas": filas, "areas": areas})
+
+
+COLOR_NIVEL = {"Sobresaliente": "verde", "Satisfactorio": "azul", "En mejora": "ambar", "Insatisfactorio": "rojo"}
+
+
+def tablero_cascada(request):
+    """Tablero de resultados en cascada: el organigrama con la nota propia y la del equipo de cada jefe."""
+    datos = calcular_resultados(request)
+    periodo = datos["periodo"]
+    if periodo is None:
+        return render(request, "desempeno/cascada.html", {"periodos": datos["periodos"]})
+    filas = {f["e"].pk: f for f in datos["filas"]}
+    for f in filas.values():
+        f["color"] = COLOR_NIVEL.get(f["nivel"], "")
+        f["ancho"] = int(f["cascada"] * 20) if f["cascada"] is not None else 0  # escala 1 a 5 → 0 a 100 %
+
+    def nodo(f, vistos):
+        vistos = vistos | {f["e"].pk}
+        hijos = [filas[h.pk] for h in datos["hijos"].get(f["e"].pk, []) if h.pk in filas and h.pk not in vistos]
+        return {**f, "hijos": [nodo(h, vistos) for h in sorted(hijos, key=lambda x: str(x["e"]))]}
+
+    raices = [f for f in filas.values() if f["e"].jefe_id not in filas]
+    arbol = [nodo(f, set()) for f in sorted(raices, key=lambda x: (-len(datos["hijos"].get(x["e"].pk, [])), str(x["e"])))]
+    evaluados = [f for f in filas.values() if f["propia"] is not None]
+    distribucion = []
+    for nivel, color in COLOR_NIVEL.items():
+        n = sum(1 for f in evaluados if catalogo.nivel_de(f["propia"]) == nivel)
+        distribucion.append({"nivel": nivel, "color": color, "n": n, "pct": round(n * 100 / len(evaluados)) if evaluados else 0})
+    promedio = (sum(f["propia"] for f in evaluados) / len(evaluados)).quantize(Decimal("0.01")) if evaluados else None
+    registrar(request, "consultar_resultados", periodo, detalle="tablero en cascada")
+    return render(request, "desempeno/cascada.html", {
+        "periodos": datos["periodos"], "periodo": periodo, "arbol": arbol, "distribucion": distribucion,
+        "promedio": promedio, "evaluados": len(evaluados), "personas": len(filas),
+        "nivel_promedio": catalogo.nivel_de(promedio) if promedio is not None else "",
+    })

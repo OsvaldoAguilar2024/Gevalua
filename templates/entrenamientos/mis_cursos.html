@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block clase_body %}{% if user.puede_ver_vista_completa %}completa{% else %}simple{% endif %}{% endblock %}
+{% block contenido %}
+<h1>Mis entrenamientos</h1>
+{% if user.es_admin_empresa %}{% include "entrenamientos/_pestanas.html" with pestana="mios" %}{% endif %}
+{% for a in asignaciones %}
+  <a class="tarjeta enlace-tarjeta" href="{% url 'curso_asignado' a.pk %}">
+    <div class="encabezado"><h2>{{ a.curso.titulo }}</h2><span class="etiqueta {{ a.color }}">{{ a.etiqueta }}</span></div>
+    <div class="barra-avance"><span style="width: {{ a.avance }}%"></span></div>
+    <p class="tenue">Video visto {{ a.avance }} % · {{ a.curso.horas }} h{% if a.fecha_limite %} · hasta el {{ a.fecha_limite|date:"d/m/Y" }}{% endif %}</p>
+  </a>
+{% empty %}
+  <section class="tarjeta vacia"><p class="grande">No tienes cursos asignados.</p><p>Cuando talento humano te asigne uno, te llegará un aviso.</p></section>
+{% endfor %}
+{% endblock %}
