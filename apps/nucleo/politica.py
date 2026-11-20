@@ -4,9 +4,9 @@ PROVISIONAL: Gio lo valida como abogado antes de producción. Si el texto cambia
 cada autorización guarda la versión y el texto exacto que la persona aceptó.
 """
 
-VERSION_POLITICA = "2026-11-provisional"
+VERSION_POLITICA = "2026-11-dvq-evalua"
 
-TEXTO = """Autorizo a {empresa} (NIT {nit}), como responsable, para tratar mis datos personales en la plataforma gevalua, que actúa como encargada del tratamiento, de acuerdo con la Ley 1581 de 2012 y sus decretos reglamentarios.
+TEXTO = """Autorizo a {empresa} (NIT {nit}), como responsable, para tratar mis datos personales en la plataforma DVQ-Evalua, que actúa como encargada del tratamiento, de acuerdo con la Ley 1581 de 2012 y sus decretos reglamentarios.
 
 Finalidades: gestionar mi ingreso y mi expediente laboral; concertar, hacer seguimiento y evaluar mi desempeño; guardar las evidencias que cargue y las firmas electrónicas que haga; asignarme entrenamientos y emitir mis certificados; enviarme avisos por correo y notificaciones; y cumplir obligaciones legales y contractuales de la relación laboral.
 

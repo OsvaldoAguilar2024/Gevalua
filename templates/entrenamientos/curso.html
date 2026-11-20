@@ -3,7 +3,7 @@
 {% block contenido %}
 <p><a href="{% if propio %}{% url 'mis_cursos' %}{% else %}{% url 'seguimiento_cursos' %}{% endif %}">← {% if propio %}Mis entrenamientos{% else %}Seguimiento{% endif %}</a></p>
 <div class="encabezado">
-  <div><h1>{{ c.titulo }}</h1><p class="tenue">{% if not propio %}{{ a.empleado }} · {% endif %}{{ c.horas }} h · nota mínima {{ c.nota_minima }} %{% if c.vigencia_meses %} · vigencia {{ c.vigencia_meses }} meses{% endif %}</p></div>
+  <div><h1>{{ c.titulo }}</h1><p class="tenue">{% if not propio %}{{ a.empleado }} · {% endif %}{% if c.instructor %}Instructor: {{ c.instructor }} · {% endif %}{{ c.horas }} h · nota mínima {{ c.nota_minima }} %{% if c.vigencia_meses %} · vigencia {{ c.vigencia_meses }} meses{% endif %}</p></div>
   <span class="etiqueta {{ a.color }}">{{ a.etiqueta }}</span>
 </div>
 {% if c.descripcion %}<p>{{ c.descripcion|linebreaksbr }}</p>{% endif %}

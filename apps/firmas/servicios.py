@@ -1,31 +1,31 @@
-"""Firma electrónica propia: código de un solo uso por correo, con huella del documento y evidencias.
+"""Firma electrónica propia y local: aceptación expresa del firmante, con huella del documento y evidencias.
+
+Acordado con Gio (noviembre de 2026): la firma queda local y sin código de confirmación por correo.
 
 El texto de aceptación es provisional: Gio lo valida como abogado antes de producción.
 """
 
 import hashlib
 import json
-import secrets
 from dataclasses import dataclass
-from datetime import timedelta
-
-from django.conf import settings
-from django.contrib.auth.hashers import check_password, make_password
-from django.core.mail import send_mail
-from django.utils import timezone
 
 from apps.nucleo.auditoria import ip_de, registrar
 
-from .models import CodigoFirma, Firma
-
-VIGENCIA_CODIGO = timedelta(minutes=10)
-MAX_INTENTOS = 5
+from .models import Firma
 
 TEXTO_ACEPTACION = (
     "Declaro que leí el documento «{titulo}», que estoy de acuerdo con su contenido y que lo firmo electrónicamente "
-    "con el código de un solo uso enviado a mi correo {email}. Acepto que esta firma tiene la misma validez que mi "
+    "al marcar esta casilla y pulsar «Firmar» {medio}. Acepto que esta firma tiene la misma validez que mi "
     "firma manuscrita, de acuerdo con la Ley 527 de 1999 y el Decreto 2364 de 2012."
 )
+
+
+def texto_aceptacion(titulo, firmante):
+    if firmante.usuario is not None:
+        medio = f"desde mi sesión personal ({firmante.email})"
+    else:
+        medio = f"desde el enlace personal enviado a mi correo {firmante.email}"
+    return TEXTO_ACEPTACION.format(titulo=titulo, medio=medio)
 
 
 class ErrorFirma(Exception):
@@ -62,53 +62,24 @@ def huella(contenido):
     return hashlib.sha256(contenido).hexdigest()
 
 
-def enviar_codigo(request, documento_tipo, documento_id, contenido, titulo, firmante=None):
-    firmante = firmante or Firmante.de_usuario(request.user)
-    codigo = f"{secrets.randbelow(10**6):06d}"
-    pendientes = CodigoFirma.objects.filter(documento_tipo=documento_tipo, documento_id=documento_id, usado=False, **firmante.filtro())
-    pendientes.update(usado=True)
-    registro = CodigoFirma.objects.create(
-        usuario=firmante.usuario, email=firmante.email, documento_tipo=documento_tipo, documento_id=documento_id,
-        huella_documento=huella(contenido), codigo_hash=make_password(codigo),
-        expira=timezone.now() + VIGENCIA_CODIGO,
-    )
-    send_mail(
-        f"Tu código para firmar: {codigo}",
-        f"Hola {firmante.nombre_corto}:\n\nTu código para firmar «{titulo}» es:\n\n    {codigo}\n\n"
-        f"Vence en {int(VIGENCIA_CODIGO.total_seconds() // 60)} minutos. Si no estás firmando nada, ignora este correo.",
-        settings.DEFAULT_FROM_EMAIL,
-        [firmante.email],
-    )
-    registrar(request, "enviar_codigo_firma", entidad=documento_tipo, detalle=f"documento {documento_id} · {firmante.email}")
-    return registro
+def firmar(request, documento_tipo, documento_id, contenido, titulo, calidad, firmante=None, acepto=False, huella_vista=None):
+    """Firma local sin código de confirmación: basta la aceptación expresa del firmante en su sesión (o en su enlace).
 
-
-def firmar(request, documento_tipo, documento_id, contenido, titulo, codigo, calidad, firmante=None):
+    `huella_vista` es la huella del documento que el firmante tenía en pantalla; si el documento cambió mientras
+    lo leía, no se firma.
+    """
     firmante = firmante or Firmante.de_usuario(request.user)
-    registro = (
-        CodigoFirma.objects.filter(documento_tipo=documento_tipo, documento_id=documento_id, usado=False, **firmante.filtro())
-        .order_by("-creado").first()
-    )
-    if registro is None:
-        raise ErrorFirma("Pide un código primero.")
-    if registro.expira < timezone.now():
-        raise ErrorFirma("El código venció. Pide uno nuevo.")
-    if registro.intentos >= MAX_INTENTOS:
-        raise ErrorFirma("Demasiados intentos. Pide un código nuevo.")
-    if registro.huella_documento != huella(contenido):
-        raise ErrorFirma("El documento cambió después de pedir el código. Revísalo y pide un código nuevo.")
-    if not check_password((codigo or "").strip(), registro.codigo_hash):
-        registro.intentos += 1
-        registro.save(update_fields=["intentos"])
-        raise ErrorFirma("Código incorrecto.")
-    registro.usado = True
-    registro.save(update_fields=["usado"])
+    if not acepto:
+        raise ErrorFirma("Marca la casilla de aceptación para firmar.")
+    vigente = huella(contenido)
+    if huella_vista is not None and huella_vista != vigente:
+        raise ErrorFirma("El documento cambió mientras lo leías. Revísalo de nuevo antes de firmar.")
     firma = Firma.objects.create(
         documento_tipo=documento_tipo, documento_id=documento_id, firmante=firmante.usuario,
         firmante_nombre=firmante.nombre, firmante_documento=firmante.documento, firmante_email=firmante.email,
-        calidad=calidad, huella_documento=registro.huella_documento,
-        texto_aceptacion=TEXTO_ACEPTACION.format(titulo=titulo, email=firmante.email),
-        ip=ip_de(request), agente=request.META.get("HTTP_USER_AGENT", "")[:300], codigo_ref=registro,
+        calidad=calidad, metodo="aceptacion_local", huella_documento=vigente,
+        texto_aceptacion=texto_aceptacion(titulo, firmante),
+        ip=ip_de(request), agente=request.META.get("HTTP_USER_AGENT", "")[:300],
     )
     registrar(request, "firmar", firma, entidad=documento_tipo,
               detalle=f"documento {documento_id} · {firmante.email} · {firma.huella_documento}")

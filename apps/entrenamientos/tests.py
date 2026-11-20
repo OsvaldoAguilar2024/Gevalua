@@ -43,7 +43,8 @@ class EntrenamientosTests(TenantTestCase):
         self.u2 = Usuario.objects.create_user("dos@prueba.co", "clave-segura-123", nombre="Dos Gómez")
         self.e2 = Empleado.objects.create(usuario=self.u2, cargo=self.cargo)
         self.curso = Curso.objects.create(titulo="Manejo seguro de montacargas", video_url="https://videos.ejemplo/m.mp4",
-                                          horas=4, nota_minima=80, max_intentos=2, vigencia_meses=12, publicado=True)
+                                          horas=4, nota_minima=80, max_intentos=2, vigencia_meses=12, publicado=True,
+                                          instructor="Carlos Instructor")
         for i in range(5):
             Pregunta.objects.create(curso=self.curso, orden=i, enunciado=f"Pregunta {i}", opcion_a="Sí", opcion_b="No",
                                     opcion_c="Tal vez", correcta="a")
@@ -88,9 +89,15 @@ class EntrenamientosTests(TenantTestCase):
         self.assertEqual((cert.nombre, cert.documento, cert.nota), ("Uno Pérez", "111222333", 100))
         self.assertIsNotNone(cert.vence)
         self.assertTrue(cert.archivo.read().startswith(b"%PDF"))
+        # firman la gerente de DVQ SAS y el instructor del curso
+        self.assertEqual((cert.responsable, cert.responsable_cargo, cert.responsable_entidad, cert.responsable_nit),
+                         ("Diana Paola Varon Quintero", "Gerente", "DVQ SAS", "901509777-9"))
+        self.assertEqual(cert.instructor, "Carlos Instructor")
         # verificación pública sin sesión
         r = TenantClient(self.tenant).get(reverse("verificar_certificado", args=[cert.codigo]))
         self.assertContains(r, "Certificado válido")
+        self.assertContains(r, "Diana Paola Varon Quintero")
+        self.assertContains(r, "Carlos Instructor")
         self.assertNotContains(r, "111222333")
         self.assertEqual(TenantClient(self.tenant).get("/verificar/NOEXISTE/").status_code, 404)
 

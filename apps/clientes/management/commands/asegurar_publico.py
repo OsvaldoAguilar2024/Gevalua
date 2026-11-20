@@ -14,7 +14,7 @@ class Command(BaseCommand):
     def handle(self, *args, **opciones):
         publico, creado = Empresa.objects.get_or_create(
             schema_name="public",
-            defaults={"nombre": "gevalua (operador)", "nit": "000000000-0"},
+            defaults={"nombre": "DVQ-Evalua (operador)", "nit": "000000000-0"},
         )
         if creado:
             self.stdout.write("Espacio común creado.")

@@ -12,6 +12,12 @@ from django.db import models
 
 EXTENSIONES_VIDEO = {"mp4", "webm", "mov", "m4v"}
 
+# Todos los certificados los firma la gerente de DVQ SAS, junto con el instructor del curso.
+FIRMA_NOMBRE = "Diana Paola Varon Quintero"
+FIRMA_CARGO = "Gerente"
+FIRMA_ENTIDAD = "DVQ SAS"
+FIRMA_NIT = "901509777-9"
+
 
 def ruta_video(instancia, archivo):
     extension = archivo.rsplit(".", 1)[-1].lower() if "." in archivo else "mp4"
@@ -42,8 +48,12 @@ class Curso(models.Model):
     vigencia_meses = models.PositiveSmallIntegerField("vigencia (meses)", null=True, blank=True, help_text="Vacío = no vence.")
     avance_para_examen = models.PositiveSmallIntegerField("avance del video para habilitar el examen (%)", default=90,
                                                           validators=[MaxValueValidator(100)])
-    responsable_nombre = models.CharField("responsable que firma el certificado", max_length=150, default="Gio Consultoría")
-    responsable_cargo = models.CharField("cargo del responsable", max_length=150, blank=True)
+    instructor = models.CharField("instructor", max_length=150, blank=True,
+                                  help_text="Nombre de quien dicta el curso. Aparece en el curso y firma el certificado.")
+    responsable_nombre = models.CharField("quien firma el certificado", max_length=150, default=FIRMA_NOMBRE)
+    responsable_cargo = models.CharField("cargo de quien firma", max_length=150, blank=True, default=FIRMA_CARGO)
+    responsable_entidad = models.CharField("empresa de quien firma", max_length=150, blank=True, default=FIRMA_ENTIDAD)
+    responsable_nit = models.CharField("NIT de esa empresa", max_length=20, blank=True, default=FIRMA_NIT)
     publicado = models.BooleanField(default=False, help_text="Solo los cursos publicados aparecen a las empresas.")
     creado = models.DateTimeField(auto_now_add=True)
 

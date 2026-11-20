@@ -1,6 +1,6 @@
 Hola{% if user.nombre %} {{ user.nombre }}{% endif %}:
 
-{% if empresa.es_publica %}Se creó tu cuenta de operador en gevalua{% else %}{{ empresa.nombre }} te creó una cuenta en gevalua{% endif %}, la plataforma de metas, evidencias y evaluación de desempeño.
+{% if empresa.es_publica %}Se creó tu cuenta de operador en {{ nombre_app }}{% else %}{{ empresa.nombre }} te creó una cuenta en {{ nombre_app }}{% endif %}, la plataforma de metas, evidencias y evaluación de desempeño.
 
 Crea tu contraseña aquí (el enlace vence en 3 días):
 

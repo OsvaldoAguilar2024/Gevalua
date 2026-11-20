@@ -139,9 +139,6 @@ class FirmaContratoTests(TenantTestCase):
         })
         self.req.refresh_from_db()
 
-    def ultimo_codigo(self):
-        return self.re.search(r"\b(\d{6})\b", mail.outbox[-1].subject).group(1)
-
     def enlace_candidato(self):
         mail.outbox.clear()
         self.c.post(reverse("enviar_a_firma", args=[self.req.pk]))
@@ -151,15 +148,14 @@ class FirmaContratoTests(TenantTestCase):
     def firma_candidato(self, ruta):
         anonimo = TenantClient(self.tenant)
         self.assertEqual(anonimo.get(ruta).status_code, 200)
-        anonimo.post(ruta, {"accion": "enviar_codigo"})
-        self.assertEqual(mail.outbox[-1].to, ["carlos@correo.co"])
-        anonimo.post(ruta, {"accion": "firmar", "codigo": self.ultimo_codigo()})
+        huella = anonimo.get(ruta).context["huella"]
+        anonimo.post(ruta, {"accion": "firmar", "acepto": "1", "huella": huella})
         return anonimo
 
     def firma_empresa(self):
         ruta = reverse("firmar", args=["contrato", self.req.pk])
-        self.c.post(ruta, {"accion": "enviar_codigo"})
-        self.c.post(ruta, {"accion": "firmar", "codigo": self.ultimo_codigo()})
+        huella = self.c.get(ruta).context["huella"]
+        self.c.post(ruta, {"accion": "firmar", "acepto": "1", "huella": huella})
 
     def test_las_dos_firmas_verifican_el_requisito(self):
         from apps.firmas.models import Firma
@@ -177,13 +173,12 @@ class FirmaContratoTests(TenantTestCase):
         self.assertEqual(self.req.verificado_por, self.admin)
         self.assertContains(self.c.get(reverse("proceso", args=[self.p.pk])), "Firmó", count=2)
 
-    def test_codigo_incorrecto_no_firma(self):
+    def test_sin_aceptar_no_firma(self):
         from apps.firmas.models import Firma
 
         ruta = self.enlace_candidato()
         anonimo = TenantClient(self.tenant)
-        anonimo.post(ruta, {"accion": "enviar_codigo"})
-        anonimo.post(ruta, {"accion": "firmar", "codigo": "000000" if self.ultimo_codigo() != "000000" else "111111"})
+        anonimo.post(ruta, {"accion": "firmar", "huella": anonimo.get(ruta).context["huella"]})
         self.assertFalse(Firma.objects.filter(documento_tipo="contrato").exists())
 
     def test_cambiar_el_contrato_invalida_enlace_y_firmas(self):

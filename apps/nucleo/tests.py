@@ -72,4 +72,4 @@ class DominioPublicoTests(TenantTestCase):
         Empresa.objects.get_or_create(schema_name="public", defaults={"nombre": "op", "nit": "000000000-0"})
         with self.settings(PUBLIC_DOMAINS=["web-prueba.up.railway.app"], ALLOWED_HOSTS=["*"]):
             r = Client(HTTP_HOST="web-prueba.up.railway.app").get("/")
-        self.assertContains(r, "gevalua")
+        self.assertContains(r, "DVQ-Evalua")

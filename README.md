@@ -1,4 +1,6 @@
-# gevalua
+# gevalua (DVQ-Evalua)
+
+En pantallas, correos y PDF la plataforma se llama **DVQ-Evalua** (`NOMBRE_APP` en `config/settings.py`). Dominios, URLs y código siguen como gevalua.
 
 Plataforma web para concertar metas con cada empleado, recoger las evidencias de su cumplimiento y evaluarlo (semanal, mensual, trimestral, semestral y anual), con ingreso y expediente digital del empleado. Pensada para empresas pequeñas y medianas en Colombia.
 

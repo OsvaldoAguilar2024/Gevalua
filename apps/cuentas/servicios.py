@@ -23,7 +23,7 @@ def enviar_correo_activacion(empresa, usuario):
         use_https=not settings.DEBUG,
         subject_template_name="registration/correo_activacion_asunto.txt",
         email_template_name="registration/correo_activacion.txt",
-        extra_email_context={"empresa": empresa},
+        extra_email_context={"empresa": empresa, "nombre_app": settings.NOMBRE_APP},
     )
 
 

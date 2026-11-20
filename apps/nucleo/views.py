@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
@@ -34,7 +35,7 @@ def manifest(request):
     empresa = request.tenant
     return JsonResponse(
         {
-            "name": f"{empresa.nombre} · gevalua",
+            "name": f"{empresa.nombre} · {settings.NOMBRE_APP}",
             "short_name": empresa.nombre[:12],
             "start_url": "/",
             "scope": "/",

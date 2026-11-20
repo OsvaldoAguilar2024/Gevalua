@@ -93,7 +93,7 @@ def enviar_codigo(request, forzar=False):
     }
     send_mail(
         f"Tu código para entrar: {codigo}",
-        f"Hola {request.user.get_short_name()}:\n\nTu código para entrar a gevalua es:\n\n    {codigo}\n\n"
+        f"Hola {request.user.get_short_name()}:\n\nTu código para entrar a {settings.NOMBRE_APP} es:\n\n    {codigo}\n\n"
         f"Vence en {VIGENCIA_SEGUNDOS // 60} minutos. Si no fuiste tú, cambia tu contraseña y avisa a soporte.",
         settings.DEFAULT_FROM_EMAIL,
         [request.user.email],

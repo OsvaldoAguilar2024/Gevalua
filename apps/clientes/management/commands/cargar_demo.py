@@ -128,7 +128,7 @@ class Datos:
     def desempeno(self):
         from apps.desempeno.models import AccionMejora, Calificacion, Concertacion, Evaluacion, Evidencia, Periodo, Plantilla
         from apps.firmas.models import Firma
-        from apps.firmas.servicios import TEXTO_ACEPTACION, huella
+        from apps.firmas.servicios import Firmante, huella, texto_aceptacion
 
         mensual = Plantilla.copiar_generica("mensual")
         Plantilla.copiar_generica("anual")
@@ -157,7 +157,7 @@ class Datos:
         def firmar(doc_tipo, c, usuario, calidad, contenido, titulo):
             Firma.objects.create(documento_tipo=doc_tipo, documento_id=c.pk, firmante=usuario, firmante_nombre=usuario.get_full_name(),
                                  firmante_documento=usuario.documento, firmante_email=usuario.email, calidad=calidad,
-                                 huella_documento=huella(contenido), texto_aceptacion=TEXTO_ACEPTACION.format(titulo=titulo, email=usuario.email),
+                                 huella_documento=huella(contenido), texto_aceptacion=texto_aceptacion(titulo, Firmante.de_usuario(usuario)),
                                  ip="127.0.0.1", agente="Datos de demo", proveedor_ref="demo")
 
         def concertar(periodo, emp, firmar_ambos=True):

@@ -113,7 +113,8 @@ def emitir_certificado(request, intento):
     cert = Certificado(
         intento=intento, nombre=usuario.get_full_name(), documento=usuario.documento, curso_titulo=curso.titulo,
         horas=curso.horas, nota=intento.nota, emitido=ahora,
-        responsable=", ".join(x for x in (curso.responsable_nombre, curso.responsable_cargo) if x),
+        responsable=curso.responsable_nombre, responsable_cargo=curso.responsable_cargo,
+        responsable_entidad=curso.responsable_entidad, responsable_nit=curso.responsable_nit, instructor=curso.instructor,
         vence=sumar_meses(timezone.localdate(ahora), curso.vigencia_meses) if curso.vigencia_meses else None,
     )
     cert.save()

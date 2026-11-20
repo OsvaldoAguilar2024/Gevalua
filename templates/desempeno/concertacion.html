@@ -50,7 +50,7 @@
 {% endif %}
 {% if firmas %}
 <section class="tarjeta firmas"><h2>Firmas</h2>
-  <ul class="lista">{% for f in firmas %}<li>{{ f.firmante_nombre }} ({{ f.calidad }}) · {{ f.fecha|date:"d/m/Y H:i" }} · código por correo · huella <code>{{ f.huella_documento|slice:":12" }}…</code></li>{% endfor %}</ul>
+  <ul class="lista">{% for f in firmas %}<li>{{ f.firmante_nombre }} ({{ f.calidad }}) · {{ f.fecha|date:"d/m/Y H:i" }} · {{ f.metodo_texto }} · huella <code>{{ f.huella_documento|slice:":12" }}…</code></li>{% endfor %}</ul>
 </section>
 {% endif %}
 {% endblock %}

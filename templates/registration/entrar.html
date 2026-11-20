@@ -3,7 +3,7 @@
 {% block cuerpo %}
 <div class="acceso-pantalla">
   <div class="acceso-form">
-    <img class="acceso-logo-movil" src="{% static 'img/logo-gevalua.png' %}" alt="gevalua">
+    <img class="acceso-logo-movil" src="{% static 'img/logo-dvq-evalua.png' %}" alt="{{ nombre_app }}">
     {% if empresa %}
     <div class="acceso-empresa">
       {% if empresa.logo %}<img src="{{ empresa.logo.url }}" alt="" class="logo" style="height: 28px">{% else %}<img src="{% static 'img/simbolo.png' %}" alt="" class="simbolo" style="height: 28px; width: 28px">{% endif %}
@@ -27,7 +27,7 @@
   </div>
   <div class="acceso-marca">
     <div class="rejilla-fondo"></div>
-    <div class="logo-caja"><img src="{% static 'img/logo-gevalua.png' %}" alt="gevalua"></div>
+    <div class="logo-caja"><img src="{% static 'img/logo-dvq-evalua.png' %}" alt="{{ nombre_app }}"></div>
     <p>Metas concertadas, evidencias y evaluación de desempeño, en un solo lugar.</p>
   </div>
 </div>

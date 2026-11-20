@@ -9,7 +9,7 @@
   <section class="tarjeta">
     <h2>{{ c.titulo }}</h2>
     {% if c.descripcion %}<p>{{ c.descripcion|truncatechars:180 }}</p>{% endif %}
-    <p class="tenue">{{ c.horas }} h · {{ c.duracion_minutos }} min de video · {{ c.n_preguntas }} preguntas · nota mínima {{ c.nota_minima }} %{% if c.vigencia_meses %} · vence a los {{ c.vigencia_meses }} meses{% endif %}</p>
+    <p class="tenue">{% if c.instructor %}Instructor: {{ c.instructor }} · {% endif %}{{ c.horas }} h · {{ c.duracion_minutos }} min de video · {{ c.n_preguntas }} preguntas · nota mínima {{ c.nota_minima }} %{% if c.vigencia_meses %} · vence a los {{ c.vigencia_meses }} meses{% endif %}</p>
     {% if c.cargos_sugeridos %}<p class="tenue">Aplica a: {{ c.cargos_sugeridos }}</p>{% endif %}
     <p>{% if c.asignados %}<span class="etiqueta azul">{{ c.asignados }} asignado{{ c.asignados|pluralize }}</span> <span class="etiqueta verde">{{ c.aprobados }} aprobado{{ c.aprobados|pluralize }}</span>{% endif %}</p>
     <a class="boton chico" href="{% url 'asignar_curso' c.pk %}">Asignar</a>

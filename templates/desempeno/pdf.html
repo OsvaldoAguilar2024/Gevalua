@@ -40,9 +40,9 @@
 <h2>Anexo de evidencias de firma electrónica</h2>
 {% for f in firmas %}
 <div class="firma"><strong>{{ f.firmante_nombre }}</strong> ({{ f.calidad }}) · documento {{ f.firmante_documento|default:"—" }} · {{ f.firmante_email }}<br>
-Fecha: {{ f.fecha|date:"d/m/Y H:i:s" }} · IP {{ f.ip|default:"—" }} · método: código de un solo uso por correo<br>
+Fecha: {{ f.fecha|date:"d/m/Y H:i:s" }} · IP {{ f.ip|default:"—" }} · método: {{ f.metodo_texto }}<br>
 Huella SHA-256 del documento: <span class="mono">{{ f.huella_documento }}</span><br>
 <span class="tenue">{{ f.texto_aceptacion }}</span></div>
 {% empty %}<p class="tenue">Sin firmas todavía.</p>{% endfor %}
-<p class="tenue">Generado el {{ generado|date:"d/m/Y H:i" }} por gevalua. La plataforma registra el historial de desempeño; las decisiones laborales siguen siendo criterio del empleador y su asesor jurídico.</p>
+<p class="tenue">Generado el {{ generado|date:"d/m/Y H:i" }} por {{ nombre_app }}. La plataforma registra el historial de desempeño; las decisiones laborales siguen siendo criterio del empleador y su asesor jurídico.</p>
 </body></html>
