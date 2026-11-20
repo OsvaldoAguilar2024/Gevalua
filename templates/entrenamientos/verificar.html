@@ -12,10 +12,12 @@
       <tr><th>Horas</th><td>{{ cert.horas }}</td></tr>
       <tr><th>Emitido</th><td>{{ cert.emitido|date:"d/m/Y" }}</td></tr>
       <tr><th>Vence</th><td>{{ cert.vence|date:"d/m/Y"|default:"No vence" }}</td></tr>
-      <tr><th>Emite</th><td>{{ empresa.nombre }}{% if cert.responsable %} · {{ cert.responsable }}{% endif %}</td></tr>
+      <tr><th>Emite</th><td>{{ empresa.nombre }}</td></tr>
+      {% if cert.responsable %}<tr><th>Firma</th><td>{{ cert.responsable }}{% if cert.responsable_cargo %}, {{ cert.responsable_cargo }}{% endif %}{% if cert.responsable_entidad %} · {{ cert.responsable_entidad }}{% endif %}{% if cert.responsable_nit %} · NIT {{ cert.responsable_nit }}{% endif %}</td></tr>{% endif %}
+      {% if cert.instructor %}<tr><th>Instructor</th><td>{{ cert.instructor }}</td></tr>{% endif %}
       <tr><th>Código</th><td>{{ cert.codigo }}</td></tr>
     </table>
-    <p class="ayuda">Certificado interno emitido en la plataforma gevalua.</p>
+    <p class="ayuda">Certificado interno emitido en la plataforma {{ nombre_app }}.</p>
   {% else %}
     <p><span class="etiqueta rojo">No encontrado</span></p>
     <p>No existe un certificado con el código «{{ codigo }}» en {{ empresa.nombre }}.</p>

@@ -1,1 +1,1 @@
-{% if empresa.es_publica %}Tu acceso de operador a gevalua{% else %}{{ empresa.nombre }} te invita a gevalua{% endif %}
+{% if empresa.es_publica %}Tu acceso de operador a {{ nombre_app }}{% else %}{{ empresa.nombre }} te invita a {{ nombre_app }}{% endif %}

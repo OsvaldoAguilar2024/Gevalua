@@ -13,9 +13,7 @@ from apps.estructura.models import Empleado
 from apps.nucleo.auditoria import registrar
 from apps.nucleo.permisos import AdminEmpresaRequerido
 
-from apps.desempeno.forms import FormularioCodigo
 from apps.firmas import servicios as firmas
-from apps.firmas.models import CodigoFirma
 
 from . import firma_contrato
 from .forms import FormularioCargaRequisito, FormularioContratacion, FormularioProceso, ItemsPlantillaFormSet
@@ -151,7 +149,7 @@ def enviar_a_firma(request, pk):
 
 
 def firma_candidato(request, token):
-    """Página pública (sin cuenta) donde el candidato lee y firma su contrato con el código de su correo."""
+    """Página pública (sin cuenta) donde el candidato lee y firma su contrato desde el enlace de su correo."""
     envio = firma_contrato.envio_por_token(token)
     req = envio.requisito
     if not envio.vigente or not firma_contrato.se_puede_firmar(req):
@@ -159,30 +157,20 @@ def firma_candidato(request, token):
     firmante = firma_contrato.firmante_candidato(envio)
     ya_firmo = firma_contrato.estado(req)["candidato"]
     titulo = firma_contrato.titulo(req)
-    form = FormularioCodigo(request.POST or None)
-    if request.method == "POST" and not ya_firmo:
-        if request.POST.get("accion") == "enviar_codigo":
-            reciente = CodigoFirma.objects.filter(
-                documento_tipo=firma_contrato.TIPO, documento_id=req.pk, usuario__isnull=True, email=firmante.email,
-                creado__gte=timezone.now() - timedelta(minutes=1),
-            ).exists()
-            if not reciente:
-                firmas.enviar_codigo(request, firma_contrato.TIPO, req.pk, firma_contrato.contenido(req), titulo, firmante)
-            messages.info(request, f"Te enviamos un código a {firmante.email}. Vence en 10 minutos.")
+    if request.method == "POST" and not ya_firmo and request.POST.get("accion") == "firmar":
+        try:
+            firmas.firmar(request, firma_contrato.TIPO, req.pk, firma_contrato.contenido(req), titulo,
+                          firma_contrato.CALIDAD_CANDIDATO, firmante,
+                          acepto=bool(request.POST.get("acepto")), huella_vista=request.POST.get("huella"))
+        except firmas.ErrorFirma as e:
+            messages.error(request, str(e))
             return redirect(request.path)
-        if request.POST.get("accion") == "firmar" and form.is_valid():
-            try:
-                firmas.firmar(request, firma_contrato.TIPO, req.pk, firma_contrato.contenido(req), titulo,
-                              form.cleaned_data["codigo"], firma_contrato.CALIDAD_CANDIDATO, firmante)
-            except firmas.ErrorFirma as e:
-                messages.error(request, str(e))
-                return redirect(request.path)
-            firma_contrato.completar_si_firmado(request, req)
-            messages.success(request, "Firmaste tu contrato. Gracias.")
-            return redirect(request.path)
+        firma_contrato.completar_si_firmado(request, req)
+        messages.success(request, "Firmaste tu contrato. Gracias.")
+        return redirect(request.path)
     return render(request, "ingreso/firma_candidato.html", {
-        "req": req, "titulo": titulo, "form": form, "ya_firmo": ya_firmo, "token": token, "empresa": request.tenant,
-        "texto": firmas.TEXTO_ACEPTACION.format(titulo=titulo, email=firmante.email),
+        "req": req, "titulo": titulo, "ya_firmo": ya_firmo, "token": token, "empresa": request.tenant,
+        "huella": firmas.huella(firma_contrato.contenido(req)), "texto": firmas.texto_aceptacion(titulo, firmante),
     })
 
 

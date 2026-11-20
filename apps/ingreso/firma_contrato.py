@@ -1,9 +1,9 @@
 """Firma electrónica del contrato dentro del ingreso.
 
-Usa el mismo mecanismo que concertaciones y evaluaciones (código de un solo uso por correo, huella SHA-256 y
-evidencias). Firman dos personas:
+Usa el mismo mecanismo que concertaciones y evaluaciones (aceptación expresa sin código de confirmación,
+huella SHA-256 y evidencias). Firman dos personas:
 
-- El candidato, que todavía no tiene cuenta: recibe un enlace en su correo, abre el contrato y firma con el código.
+- El candidato, que todavía no tiene cuenta: recibe un enlace en su correo, abre el contrato y lo firma ahí.
 - El empleador: un administrador de la empresa firma desde el proceso con su propia cuenta.
 
 Cuando las dos firmas corresponden al archivo vigente, el requisito queda verificado solo.

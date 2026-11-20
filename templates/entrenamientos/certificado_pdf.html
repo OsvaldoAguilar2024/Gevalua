@@ -15,7 +15,8 @@
   .curso strong { font-size: 15pt; }
   .datos { text-align: center; font-size: 10pt; color: #1b2430; }
   .pie { position: absolute; left: 18mm; right: 18mm; bottom: 12mm; display: flex; justify-content: space-between; align-items: flex-end; }
-  .firma { border-top: 1px solid #1b2430; padding-top: 2mm; width: 75mm; font-size: 9.5pt; }
+  .firmas { display: flex; gap: 10mm; align-items: flex-start; }
+  .firma { border-top: 1px solid #1b2430; padding-top: 2mm; width: 68mm; font-size: 9pt; line-height: 1.35; }
   .qr { text-align: right; font-size: 7.5pt; color: #5b6675; }
   .qr img { width: 28mm; height: 28mm; }
 </style></head>
@@ -31,7 +32,10 @@
   <div class="curso">aprobó el entrenamiento<br><strong>{{ c.curso_titulo }}</strong></div>
   <div class="datos">Intensidad: {{ c.horas }} horas · Nota: {{ c.nota|floatformat:0 }} % · Emitido el {{ c.emitido|date:"d/m/Y" }}{% if c.vence %} · Vence el {{ c.vence|date:"d/m/Y" }}{% endif %}</div>
   <div class="pie">
-    <div class="firma"><strong>{{ c.responsable|default:empresa.nombre }}</strong><br>Responsable del entrenamiento</div>
+    <div class="firmas">
+      <div class="firma"><strong>{{ c.responsable|default:empresa.nombre }}</strong><br>{% if c.responsable_cargo %}{{ c.responsable_cargo }}{% else %}Responsable del entrenamiento{% endif %}{% if c.responsable_entidad %}<br>{{ c.responsable_entidad }}{% if c.responsable_nit %} · NIT {{ c.responsable_nit }}{% endif %}{% endif %}</div>
+      {% if c.instructor %}<div class="firma"><strong>{{ c.instructor }}</strong><br>Instructor</div>{% endif %}
+    </div>
     <div class="qr"><img src="{{ qr }}"><br>Verifica en {{ url_verificacion }}<br>Código {{ c.codigo }}</div>
   </div>
 </div></body></html>

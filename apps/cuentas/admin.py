@@ -37,7 +37,7 @@ def enviar_activacion_operador(request, usuario):
         use_https=request.is_secure() or not settings.DEBUG,
         subject_template_name="registration/correo_activacion_asunto.txt",
         email_template_name="registration/correo_activacion.txt",
-        extra_email_context={"empresa": request.tenant},
+        extra_email_context={"empresa": request.tenant, "nombre_app": settings.NOMBRE_APP},
     )
 
 

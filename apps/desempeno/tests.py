@@ -45,10 +45,8 @@ class ConcertacionTests(TenantTestCase):
     def firmar_como(self, usuario, conc, tipo="concertacion"):
         self.c.force_login(usuario)
         url = reverse("firmar", args=[tipo, conc.pk])
-        mail.outbox.clear()
-        self.c.post(url, {"accion": "enviar_codigo"})
-        codigo = re.search(r"\b(\d{6})\b", mail.outbox[0].subject).group(1)
-        return self.c.post(url, {"accion": "firmar", "codigo": codigo})
+        huella = self.c.get(url).context["huella"]
+        return self.c.post(url, {"accion": "firmar", "acepto": "1", "huella": huella})
 
     def test_plantilla_generica_suma_100(self):
         self.assertEqual(self.plantilla.suma_pesos, 100)
@@ -75,25 +73,36 @@ class ConcertacionTests(TenantTestCase):
         self.assertEqual(firmas.count(), 2)
         self.assertEqual(len({f.huella_documento for f in firmas}), 1)
 
-    def test_codigo_incorrecto_no_firma(self):
+    def test_sin_aceptar_no_firma(self):
         conc = Concertacion.objects.get(empleado=self.emp)
         self.c.force_login(self.jefe.usuario)
         url = reverse("firmar", args=["concertacion", conc.pk])
-        self.c.post(url, {"accion": "enviar_codigo"})
-        self.c.post(url, {"accion": "firmar", "codigo": "000000" if "000000" not in mail.outbox[-1].subject else "111111"})
+        mail.outbox.clear()
+        resp = self.c.get(url)
+        self.assertNotContains(resp, "código")
+        self.c.post(url, {"accion": "firmar", "huella": resp.context["huella"]})
         conc.refresh_from_db()
         self.assertEqual(conc.estado, Concertacion.Estado.BORRADOR)
+        self.assertFalse(Firma.objects.exists())
 
-    def test_cambiar_metas_invalida_codigo(self):
+    def test_firma_local_sin_codigo(self):
+        conc = Concertacion.objects.get(empleado=self.emp)
+        mail.outbox.clear()
+        self.firmar_como(self.jefe.usuario, conc)
+        f = Firma.objects.get(documento_tipo="concertacion", documento_id=conc.pk)
+        self.assertEqual(f.metodo, "aceptacion_local")
+        self.assertIsNone(f.codigo_ref)
+        self.assertFalse([m for m in mail.outbox if "código" in m.subject.lower()])
+
+    def test_cambiar_metas_mientras_lee_no_firma(self):
         conc = Concertacion.objects.get(empleado=self.emp)
         self.c.force_login(self.jefe.usuario)
         url = reverse("firmar", args=["concertacion", conc.pk])
-        self.c.post(url, {"accion": "enviar_codigo"})
-        codigo = re.search(r"\b(\d{6})\b", mail.outbox[-1].subject).group(1)
+        huella = self.c.get(url).context["huella"]
         meta = conc.metas.first()
         meta.descripcion = "Otra cosa"
         meta.save()
-        self.c.post(url, {"accion": "firmar", "codigo": codigo})
+        self.c.post(url, {"accion": "firmar", "acepto": "1", "huella": huella})
         conc.refresh_from_db()
         self.assertEqual(conc.estado, Concertacion.Estado.BORRADOR)
 

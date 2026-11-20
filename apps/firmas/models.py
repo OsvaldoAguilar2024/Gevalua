@@ -21,7 +21,16 @@ class CodigoFirma(models.Model):
 
 
 class Firma(models.Model):
-    """Firma electrónica propia (Ley 527 de 1999, Decreto 2364 de 2012): código por correo con evidencias."""
+    """Firma electrónica propia (Ley 527 de 1999, Decreto 2364 de 2012): aceptación expresa del firmante con evidencias.
+
+    Desde noviembre de 2026 la firma es local y sin código de confirmación (`metodo="aceptacion_local"`). Las firmas
+    anteriores conservan `metodo="codigo_correo"` y su `codigo_ref`.
+    """
+
+    METODOS = {
+        "aceptacion_local": "aceptación en la plataforma",
+        "codigo_correo": "código de un solo uso por correo",
+    }
 
     class Documento(models.TextChoices):
         CONCERTACION = "concertacion", "Concertación de metas"
@@ -39,7 +48,7 @@ class Firma(models.Model):
     firmante_documento = models.CharField(max_length=20, blank=True)
     firmante_email = models.EmailField()
     calidad = models.CharField("firma como", max_length=40)
-    metodo = models.CharField(max_length=30, default="codigo_correo")
+    metodo = models.CharField(max_length=30, default="aceptacion_local")
     huella_documento = models.CharField("hash SHA-256 del documento", max_length=64)
     texto_aceptacion = models.TextField()
     ip = models.GenericIPAddressField(null=True, blank=True)
@@ -53,6 +62,10 @@ class Firma(models.Model):
         verbose_name_plural = "firmas"
         ordering = ["fecha"]
         indexes = [models.Index(fields=["documento_tipo", "documento_id"])]
+
+    @property
+    def metodo_texto(self):
+        return self.METODOS.get(self.metodo, self.metodo)
 
     def __str__(self):
         return f"{self.firmante_nombre} firmó {self.get_documento_tipo_display()} {self.documento_id} el {self.fecha:%d/%m/%Y %H:%M}"

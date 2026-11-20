@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import views as auth_views
 from django.urls import path, reverse_lazy
 
@@ -14,6 +15,7 @@ urlpatterns = [
             template_name="registration/recuperar.html",
             email_template_name="registration/correo_clave.txt",
             subject_template_name="registration/correo_clave_asunto.txt",
+            extra_email_context={"nombre_app": settings.NOMBRE_APP},
             success_url=reverse_lazy("recuperar_enviado"),
         ),
         name="recuperar",

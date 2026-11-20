@@ -1,4 +1,4 @@
-"""Configuración de gevalua.
+"""Configuración de gevalua (nombre visible: DVQ-Evalua).
 
 Todo lo que cambia entre entornos se lee de variables de entorno (ver .env.example).
 """
@@ -117,6 +117,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.nucleo.context_processors.empresa",
+                "apps.nucleo.context_processors.nombre_app",
             ],
         },
     },
@@ -203,7 +204,9 @@ STORAGES = {
 TAMANO_MAXIMO_SOPORTE_MB = 20
 
 # --- Correo (Resend) --------------------------------------------------------
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", f"gevalua <no-responder@{DOMINIO_ORGANIZACION}>")
+# Nombre visible de la plataforma. Solo presentación: dominios, URLs y código siguen como gevalua.
+NOMBRE_APP = "DVQ-Evalua"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", f"{NOMBRE_APP} <no-responder@{DOMINIO_ORGANIZACION}>")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 if os.environ.get("RESEND_API_KEY"):
     EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
