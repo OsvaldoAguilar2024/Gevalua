@@ -238,3 +238,54 @@ fieldset.module h2, fieldset.module summary h2 { color: var(--texto); font-size:
 #changelist .results { overflow-x: auto; }
 .object-tools a.addlink { padding-right: 34px; background-position: right 12px center; }
 #nav-sidebar { flex-basis: 240px; width: 240px; }
+
+/* --- Celular: todo más compacto (pedido de Osvaldo) --- */
+#header { flex-shrink: 0; }
+@media (max-width: 767px) {
+  body { font-size: 14px; }
+  #header { padding: 10px 14px; min-height: 0; gap: 6px; align-items: flex-start; }
+  .op-marca { gap: 8px; }
+  .op-marca img { width: 26px; height: 26px; }
+  .op-marca strong { font-size: 1rem; }
+  .op-marca small { font-size: .7rem; }
+  #user-tools { font-size: .75rem; line-height: 1.6; margin: 0; }
+  .op-usuario { padding: 1px 8px; margin-right: 4px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+  #logout-form button { font-size: .75rem; }
+  div.breadcrumbs { padding: 8px 14px 0; font-size: .75rem; }
+  #content { padding: 12px 14px 28px; }
+  h1, #content h1 { font-size: 1.25rem; margin: 4px 0 12px; }
+  .module { border-radius: 12px; margin-bottom: 14px; }
+  .module h2, .module caption, .inline-group h2 { padding: 9px 12px; font-size: .85rem; }
+  .module th, .module td { padding: 8px 12px; font-size: .85rem; }
+  .dashboard .module table td a.addlink, .dashboard .module table td a.changelink { font-size: .8rem; }
+  #content-related h2 { padding: 9px 12px; font-size: .85rem; }
+  #content-related h3, #content-related .actionlist { padding-left: 12px; padding-right: 12px; font-size: .8rem; }
+  .form-row { padding: 8px 12px; }
+  input[type=text], input[type=password], input[type=email], input[type=url], input[type=number], input[type=tel],
+  input[type=date], input[type=time], textarea, select, .vTextField { font-size: .9rem; padding: 6px 10px; border-radius: 8px; }
+  label, .aligned label { font-size: .85rem; }
+  .button, input[type=submit], input[type=button], .submit-row input, a.button { padding: 7px 12px; font-size: .85rem; }
+  .submit-row { padding: 10px 12px; border-radius: 12px; }
+  .object-tools a:link, .object-tools a:visited { font-size: .78rem; padding: 4px 30px 4px 12px; }
+  #result_list td, #result_list th { padding: 8px 10px; font-size: .85rem; }
+  #result_list thead th { font-size: .7rem; }
+  #changelist #toolbar, #changelist .actions { padding: 8px 10px; }
+  #changelist-filter { margin-left: 0; }
+  #changelist-filter h2 { padding: 9px 12px; font-size: .85rem; }
+  #changelist-filter h3, #changelist-filter li { font-size: .82rem; }
+  /* ingreso */
+  .acceso-form { padding: 24px 18px; }
+  .acceso-form h1 { font-size: 1.45rem; }
+  .acceso-form .sub { font-size: .9rem; margin-bottom: 10px; }
+  .acceso-form label { margin: 10px 0 4px; font-size: .9rem; }
+  .acceso-form input[type=text], .acceso-form input[type=password], .acceso-form input[type=email] { padding: 10px 12px; font-size: .95rem; border-radius: 10px; }
+  .acceso-logo-movil { width: 120px; margin-bottom: 16px; }
+  .op-etiqueta { font-size: .75rem; padding: 3px 10px; }
+  .op-boton { margin-top: 16px; padding: 11px; font-size: .95rem; border-radius: 10px; }
+  .op-recuperar { font-size: .85rem; }
+}
+@media (max-width: 767px) {
+  html { font-size: 13px; }
+  #content-related h2 { font-size: .95rem; }
+  #content-related p { font-size: .9rem; padding: 0 12px; }
+}
