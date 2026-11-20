@@ -289,3 +289,4 @@ fieldset.module h2, fieldset.module summary h2 { color: var(--texto); font-size:
   #content-related h2 { font-size: .95rem; }
   #content-related p { font-size: .9rem; padding: 0 12px; }
 }
+.submit-row input, input[type=submit].default, .button.default { text-transform: none !important; }

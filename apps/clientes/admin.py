@@ -35,14 +35,31 @@ class FormularioEmpresa(forms.ModelForm):
         return sub
 
 
+class FormularioDominio(forms.ModelForm):
+    """Los campos de django-tenants vienen en inglés (domain, tenant, is_primary): aquí van en español."""
+
+    class Meta:
+        model = Dominio
+        fields = ["domain", "tenant", "is_primary"]
+        labels = {"domain": "Dirección web", "tenant": "Empresa", "is_primary": "Dirección principal"}
+        help_texts = {
+            "domain": f"Sin https:// ni barras. Ej.: abc.{settings.BASE_DOMAIN}",
+            "tenant": "Empresa a la que lleva esta dirección.",
+            "is_primary": "La que se usa en correos y enlaces. Solo una por empresa.",
+        }
+
+
 class DominioInline(admin.TabularInline):
     model = Dominio
+    form = FormularioDominio
     extra = 0
+    verbose_name = "dirección web"
+    verbose_name_plural = "direcciones web"
 
 
 @admin.register(Empresa)
 class EmpresaAdmin(admin.ModelAdmin):
-    list_display = ["nombre", "nit", "schema_name", "plan", "activa", "creada"]
+    list_display = ["nombre", "nit", "esquema", "plan", "activa", "creada"]
     list_filter = ["plan", "activa", "tamano"]
     search_fields = ["nombre", "nit", "schema_name"]
     inlines = [DominioInline]
@@ -58,10 +75,14 @@ class EmpresaAdmin(admin.ModelAdmin):
     def get_fields(self, request, obj=None):
         if obj is None:
             return ["nombre", "nit", "logo", "tamano", "industria", "plan", "subdominio", "admin_email", "admin_nombre"]
-        return ["nombre", "nit", "logo", "tamano", "industria", "plan", "activa", "schema_name"]
+        return ["nombre", "nit", "logo", "tamano", "industria", "plan", "activa", "esquema"]
 
     def get_readonly_fields(self, request, obj=None):
-        return ["schema_name"] if obj else []
+        return ["esquema"] if obj else []
+
+    @admin.display(description="esquema", ordering="schema_name")
+    def esquema(self, obj):
+        return obj.schema_name
 
     def get_inlines(self, request, obj):
         return [DominioInline] if obj else []
@@ -84,5 +105,18 @@ class EmpresaAdmin(admin.ModelAdmin):
 
 @admin.register(Dominio)
 class DominioAdmin(admin.ModelAdmin):
-    list_display = ["domain", "tenant", "is_primary"]
-    search_fields = ["domain"]
+    form = FormularioDominio
+    list_display = ["direccion", "empresa", "principal"]
+    search_fields = ["domain", "tenant__nombre"]
+
+    @admin.display(description="dirección web", ordering="domain")
+    def direccion(self, obj):
+        return obj.domain
+
+    @admin.display(description="empresa", ordering="tenant__nombre")
+    def empresa(self, obj):
+        return obj.tenant
+
+    @admin.display(description="dirección principal", boolean=True, ordering="is_primary")
+    def principal(self, obj):
+        return obj.is_primary
