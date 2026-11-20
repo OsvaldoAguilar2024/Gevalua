@@ -1,0 +1,40 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}Entrar | {{ site_title }}{% endblock %}
+{% block bodyclass %}{{ block.super }} login op-acceso{% endblock %}
+{% block header %}{% endblock %}
+{% block usertools %}{% endblock %}
+{% block nav-global %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+
+{% block content %}
+<div class="acceso-pantalla">
+  <div class="acceso-form">
+    <img class="acceso-logo-movil" src="{% static 'img/logo-dvq-evalua.png' %}" alt="{{ nombre_app }}">
+    <span class="op-etiqueta">Operador de la plataforma</span>
+    <h1>Entrar</h1>
+    <p class="sub">Escribe tu correo y tu contraseña para entrar al panel.</p>
+    {% if form.errors %}<p class="errornote">Correo o contraseña incorrectos.</p>{% endif %}
+    {% if user.is_authenticated %}
+    <p class="errornote">Entraste como {{ username }}, pero esa cuenta no tiene acceso al panel del operador. Entra con otra cuenta.</p>
+    {% endif %}
+    <form action="{{ app_path }}" method="post" id="login-form" novalidate>{% csrf_token %}
+      <label for="id_username">Correo</label>
+      {{ form.username }}
+      <label for="id_password">Contraseña</label>
+      {{ form.password }}
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="op-boton">Entrar</button>
+    </form>
+    <p class="op-recuperar"><a href="{% url 'recuperar' %}">Olvidé mi contraseña</a></p>
+  </div>
+  <div class="acceso-marca">
+    <div class="rejilla-fondo"></div>
+    <div class="logo-caja"><img src="{% static 'img/logo-dvq-evalua.png' %}" alt="{{ nombre_app }}"></div>
+    <p>Empresas, cuentas y catálogo de entrenamientos de la plataforma, en un solo lugar.</p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{# Panel del operador con el estilo de la app (DVQ-Evalua): misma letra, colores del logo, tarjetas y menú lateral. #}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title }}{% endblock %}
+
+{% block dark-mode-vars %}{% endblock %}
+
+{% block extrastyle %}
+<link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32.png' %}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/operador.css' %}">
+{% endblock %}
+
+{% block branding %}
+<a class="op-marca" href="{% url 'admin:index' %}">
+  <img src="{% static 'img/simbolo.png' %}" alt="" width="34" height="34">
+  <span><strong>{{ nombre_app }}</strong><small>Operador de la plataforma</small></span>
+</a>
+{% endblock %}
+
+{% block welcome-msg %}<span class="op-usuario">{% firstof user.get_short_name user.get_username %}</span>{% endblock %}
+
+{% block nav-global %}{% endblock %}
